@@ -1,0 +1,26 @@
+.cocina-container { font-family: Arial, sans-serif; background-color: #f4f6f8; height: 100vh; display: flex; flex-direction: column; }
+.cocina-header { background-color: #1a202c; color: white; display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; font-weight: bold; }
+.btn-salir { background-color: #e53e3e; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+.cocina-body { display: flex; flex: 1; padding: 20px; gap: 20px; overflow: hidden; }
+.panel-menu { width: 260px; background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; }
+.menu-titulo h3 { font-size: 14px; margin: 0; color: #2d3748; }
+.menu-titulo p { font-size: 11px; color: #718096; margin: 4px 0 0 0; }
+.menu-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: background 0.2s; }
+.menu-card:hover { background-color: #f7fafc; }
+.item-nombre { font-size: 13px; font-weight: bold; color: #2d3748; }
+.badge-disponible { background-color: #c6f6d5; color: #22543d; border: none; padding: 4px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+.badge-agotado { background-color: #fed7d7; color: #742a2a; border: none; padding: 4px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+.panel-kanban { flex: 1; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+.kanban-header-info h2 { font-size: 18px; margin: 0; color: #1a202c; text-align: center; }
+.kanban-header-info p { font-size: 12px; color: #718096; text-align: center; margin: 4px 0 20px 0; }
+.kanban-columns { display: flex; gap: 15px; flex: 1; overflow-x: auto; }
+.kanban-col { flex: 1; background: #edf2f7; border-radius: 6px; display: flex; flex-direction: column; min-width: 200px; }
+.col-header { background: #2d3748; color: white; padding: 10px; font-size: 12px; font-weight: bold; border-top-left-radius: 6px; border-top-right-radius: 6px; text-align: center; }
+.cards-wrapper { padding: 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; }
+.orden-card { background: white; border-radius: 6px; padding: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 4px; }
+.orden-card h4 { margin: 0; font-size: 14px; color: #2d3748; }
+.orden-card p { margin: 0; font-size: 12px; color: #4a5568; }
+.orden-card .tiempo { color: #e53e3e; font-weight: bold; }
+.card-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }
+.btn-flecha { background-color: #3182ce; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-flecha:hover { background-color: #2b6cb0; }
