@@ -1,0 +1,101 @@
+<div class="cocina-container">
+  <header class="cocina-header">
+    <div class="logo-area">RESTAURANT</div>
+    <div class="titulo-area">INTERFAZ: COCINA - TABLERO DE AVANCE</div>
+    <div class="usuario-area">
+      Cocina Principal (Chef Lucas) | <button class="btn-salir">SALIR</button>
+    </div>
+  </header>
+
+  <div class="cocina-body">
+    <!-- Panel Izquierdo: Menú / Disponibilidad -->
+    <aside class="panel-menu">
+      <div class="menu-titulo">
+        <h3>MENÚ / DISPONIBILIDAD</h3>
+        <p>Marcar agotado para meseros</p>
+      </div>
+      <div class="menu-card" *ngFor="let item of menuItems" (click)="toggleDisponibilidad(item)">
+        <span class="item-nombre">{{ item.nombre }}</span>
+        <button [ngClass]="item.disponible ? 'badge-disponible' : 'badge-agotado'">
+          {{ item.disponible ? 'DISPONIBLE' : 'AGOTADO' }}
+        </button>
+      </div>
+    </aside>
+
+    <!-- Panel Derecho: Tablero Kanban -->
+    <main class="panel-kanban">
+      <div class="kanban-header-info">
+        <h2>CONTROL POR PLATILLO</h2>
+        <p>Toque el botón de flecha para cambiar de estado individual (Soporte Bidireccional)</p>
+      </div>
+
+      <div class="kanban-columns">
+        <!-- PENDIENTE -->
+        <div class="kanban-col">
+          <div class="col-header">📌 PENDIENTE</div>
+          <div class="cards-wrapper">
+            <div class="orden-card" *ngFor="let orden of getOrdenesPorEstado('pendiente')">
+              <h4>{{ orden.platillo }}</h4>
+              <p>🍽️ {{ orden.mesa }}</p>
+              <p class="tiempo">{{ orden.tiempo }}</p>
+              <p class="comanda">Comanda: {{ orden.comanda }}</p>
+              <div class="card-actions">
+                <button class="btn-flecha" (click)="avanzarEstado(orden)">→</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PREPARACIÓN -->
+        <div class="kanban-col">
+          <div class="col-header">🔥 PREPARACIÓN</div>
+          <div class="cards-wrapper">
+            <div class="orden-card" *ngFor="let orden of getOrdenesPorEstado('preparacion')">
+              <h4>{{ orden.platillo }}</h4>
+              <p>🍽️ {{ orden.mesa }}</p>
+              <p class="tiempo">{{ orden.tiempo }}</p>
+              <p class="comanda">Comanda: {{ orden.comanda }}</p>
+              <div class="card-actions">
+                <button class="btn-flecha" (click)="retrocederEstado(orden)">←</button>
+                <button class="btn-flecha" (click)="avanzarEstado(orden)">→</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LISTO -->
+        <div class="kanban-col">
+          <div class="col-header">✅ LISTO</div>
+          <div class="cards-wrapper">
+            <div class="orden-card" *ngFor="let orden of getOrdenesPorEstado('listo')">
+              <h4>{{ orden.platillo }}</h4>
+              <p>🍽️ {{ orden.mesa }}</p>
+              <p class="tiempo">{{ orden.tiempo }}</p>
+              <p class="comanda">Comanda: {{ orden.comanda }}</p>
+              <div class="card-actions">
+                <button class="btn-flecha" (click)="retrocederEstado(orden)">←</button>
+                <button class="btn-flecha" (click)="avanzarEstado(orden)">→</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ENTREGADO -->
+        <div class="kanban-col">
+          <div class="col-header">📦 ENTREGADO</div>
+          <div class="cards-wrapper">
+            <div class="orden-card" *ngFor="let orden of getOrdenesPorEstado('entregado')">
+              <h4>{{ orden.platillo }}</h4>
+              <p>🍽️ {{ orden.mesa }}</p>
+              <p class="tiempo">{{ orden.tiempo }}</p>
+              <p class="comanda">Comanda: {{ orden.comanda }}</p>
+              <div class="card-actions">
+                <button class="btn-flecha" (click)="retrocederEstado(orden)">←</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
