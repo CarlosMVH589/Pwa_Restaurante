@@ -1,0 +1,118 @@
+<div class="reportes-container">
+  <!-- Top Bar Navbar -->
+  <header class="navbar">
+    <div class="nav-title">
+      <svg class="store-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/>
+      </svg>
+      <span>RESTAURANT | REPORTES DE VENTAS</span>
+    </div>
+    <button class="btn-dashboard" (click)="volverDashboard()">VOLVER AL DASHBOARD</button>
+  </header>
+
+  <!-- Content Workspace -->
+  <main class="main-content">
+    <div class="report-card">
+      
+      <!-- Toolbar Filters & Actions -->
+      <div class="toolbar">
+        <div class="filter-group">
+          <label for="fecha-reporte">Fecha:</label>
+          <select id="fecha-reporte" [(ngModel)]="fechaSeleccionada">
+            <option value="hoy">Hoy (21 Sep 2026)</option>
+            <option value="ayer">Ayer</option>
+            <option value="semana">Esta Semana</option>
+            <option value="mes">Este Mes</option>
+          </select>
+
+          <label for="turno-reporte">Turno:</label>
+          <select id="turno-reporte" [(ngModel)]="turnoSeleccionado">
+            <option value="completo">Turno Completo</option>
+            <option value="matutino">Matutino</option>
+            <option value="vespertino">Vespertino</option>
+          </select>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn-export" (click)="exportarPDF()">EXPORTAR PDF</button>
+          <button class="btn-export" (click)="exportarExcel()">EXPORTAR EXCEL</button>
+        </div>
+      </div>
+
+      <!-- Key Metrics Summary Cards -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-header">Ventas Totales:</div>
+          <div class="metric-value">${{ ventasTotales | number:'1.2-2' }} MXN</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">Ticket Promedio:</div>
+          <div class="metric-value">${{ ticketPromedio | number:'1.2-2' }} MXN</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">Transacciones:</div>
+          <div class="metric-value">{{ transaccionesCount }} Tickets</div>
+        </div>
+      </div>
+
+      <!-- Charts & Detailed Tables Section -->
+      <div class="data-section">
+        
+        <!-- Left: Top 5 Chart -->
+        <div class="chart-container">
+          <h3 class="section-title">Top 5 Productos Más Vendidos</h3>
+          <div class="chart-body">
+            @for (item of topProductos; track item.posicion) {
+              <div class="bar-row">
+                <span class="bar-label">{{ item.nombre }}</span>
+                <div class="bar-track">
+                  <div class="bar-fill" [style.width.%]="item.porcentajeAncho"></div>
+                </div>
+                <span class="bar-value">${{ item.monto | number:'1.2-2' }}</span>
+              </div>
+            }
+            <div class="chart-axis-x">
+              <span>0</span>
+              <span>$50.00</span>
+              <span>$00.00</span>
+              <span>$50.00</span>
+              <span>$00.00</span>
+              <span>$50.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Sales Detail Table -->
+        <div class="table-container">
+          <h3 class="section-title">Detalle de Ventas por Producto</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th>Unidades Vendidas</th>
+                  <th>Total MXN</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (venta of detalleVentas; track venta.id) {
+                  <tr>
+                    <td>{{ venta.producto }}</td>
+                    <td>{{ venta.categoria }}</td>
+                    <td class="text-center">{{ venta.unidades }}</td>
+                    <td class="text-right">${{ venta.total | number:'1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+</div>
