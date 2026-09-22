@@ -1,0 +1,128 @@
+<div class="modal-backdrop">
+  <div class="modal-card">
+    
+    <!-- Encabezado del Modal -->
+    <header class="modal-header">
+      <h2>CONFIRMACIÓN Y FIRMA DE AUDITORÍA DE CAJA</h2>
+      <button class="btn-close" (click)="onCerrar()" aria-label="Cerrar modal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Cuerpo del Modal -->
+    <div class="modal-body">
+      
+      <!-- AUDIT SUMMARY BOX -->
+      <section class="section-box">
+        <h3 class="section-title">Cuadro de resumen de auditoría</h3>
+        
+        <div class="summary-list">
+          <div class="summary-row">
+            <span class="label">Efectivo en Sistema:</span>
+            <span class="amount">${{ efectivoSistema | number:'1.2-2' }} MXN</span>
+          </div>
+          
+          <div class="summary-row">
+            <span class="label">Efectivo Arqueado Físico:</span>
+            <span class="amount">${{ efectivoArqueado | number:'1.2-2' }} MXN</span>
+          </div>
+
+          <div class="diferencia-pill" [ngClass]="{ 'sobrante': esSobrante, 'faltante': !esSobrante }">
+            <span class="label">Diferencia / {{ esSobrante ? 'Sobrante' : 'Faltante' }}:</span>
+            <span class="amount">
+              {{ esSobrante ? '+' : '' }}${{ diferencia | number:'1.2-2' }} MXN
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- REQUIRED INPUTS -->
+      <section class="section-inputs">
+        <h3 class="section-title">Entradas requeridas</h3>
+
+        <div class="form-group">
+          <label for="justificacion">Justificación de la Diferencia (Obligatorio):</label>
+          <textarea 
+            id="justificacion" 
+            rows="3" 
+            [(ngModel)]="justificacion"
+            placeholder="Escribe la justificación de la diferencia registrada...">
+          </textarea>
+        </div>
+
+        <div class="pin-group">
+          <span class="pin-title">PIN Security</span>
+          <div class="pin-input-wrapper">
+            <label for="pinGerente">PIN de Gerente:</label>
+            <input 
+              type="password" 
+              id="pinGerente" 
+              [(ngModel)]="pinGerente" 
+              maxlength="8" 
+              placeholder="****" />
+          </div>
+        </div>
+
+        <div class="checkbox-group">
+          <label class="custom-checkbox">
+            <input type="checkbox" [(ngModel)]="confirmado" />
+            <span class="checkmark"></span>
+            <span class="checkbox-label">Confirmo que el conteo físico de billetes y monedas es correcto</span>
+          </label>
+        </div>
+
+        @if (errorMensaje) {
+          <div class="error-banner">
+            {{ errorMensaje }}
+          </div>
+        }
+
+        @if (mensajeEstado) {
+          <div class="status-banner" [class.success-banner]="auditoriaFirmada">
+            {{ mensajeEstado }}
+          </div>
+        }
+      </section>
+
+    </div>
+
+    @if (mostrarFirma) {
+      <section class="signature-panel">
+        <h3>FIRMA SIMULADA</h3>
+        <p>Escribe tu nombre para confirmar la auditoría.</p>
+        <label for="firma-nombre">Nombre del gerente</label>
+        <input id="firma-nombre" type="text" [(ngModel)]="firmaNombre" placeholder="Gerardo R." />
+        <label class="signature-check">
+          <input type="checkbox" [(ngModel)]="firmaConfirmada" />
+          Confirmo esta firma
+        </label>
+        <div class="signature-actions">
+          <button type="button" class="btn-sign" (click)="confirmarFirma()">CONFIRMAR FIRMA</button>
+          <button type="button" class="btn-cancel-sign" (click)="cancelarFirma()">CANCELAR</button>
+        </div>
+      </section>
+    }
+//comentario
+    <!-- Acciones/Botones del Modal -->
+    <footer class="modal-footer">
+      <button 
+        type="button" 
+        class="btn-submit" 
+        [disabled]="!formularioValido || auditoriaFirmada || mostrarFirma"
+        (click)="firmarYFinalizar()">
+        {{ auditoriaFirmada ? ' AUDITORÍA FINALIZADA ' : ' ABRIR FIRMA Y FINALIZAR ' }}
+      </button>
+
+      <button 
+        type="button" 
+        class="btn-cancel" 
+        (click)="regresarAConteo()">
+         REGRESAR A REVISAR CONTEO 
+      </button>
+    </footer>
+
+  </div>
+</div>
