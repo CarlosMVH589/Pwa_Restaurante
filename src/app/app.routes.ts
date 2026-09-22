@@ -9,48 +9,76 @@ import { MeseroPage } from './features/mesero/pages/mesero/mesero';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginPage },
+
   // Ruta principal de Gerente 
   { path: 'gerente', component: GerenteComponent },
   // Submódulos de Gerente (Carga perezosa / Lazy loading) 
-  { path: 'gerente/gestionar-menu', 
+  { 
+    path: 'gerente/gestionar-menu', 
     loadComponent: () => 
       import('./features/gerente/gestionar-menu/gestionar-menu').then( 
         (m) => m.GestionarMenuComponent 
       ) 
-    }, 
-    { 
-      path: 'gerente/reportes-ventas', 
-      loadComponent: () => 
-        import('./features/gerente/reportes-ventas/reportes-ventas').then( 
-          (m) => m.ReportesVentasComponent 
-        ) 
-      }, 
-      { 
-        path: 'gerente/configuracion-turnos', 
-        loadComponent: () => 
-          import('./features/gerente/configuracion-turnos/configuracion-turnos').then( 
-            (m) => m.ConfiguracionTurnosComponent 
-          ) 
-        }, 
-        { 
-          path: 'gerente/validar-arqueo', 
-          loadComponent: () => 
-            import('./features/gerente/validar-arqueo/validar-arqueo').then(
-               (m) => m.ValidarArqueoComponent 
-              ) 
-            }, 
-            { 
-              path: 'gerente/anadir-personal', 
-              loadComponent: () => 
-                import('./features/gerente/anadir-personal/anadir-personal').then( 
-                  (m) => m.AnadirPersonalComponent 
-                ) 
-              }, 
-    // Rutas de los demás roles del equipo 
-    { path: 'mesero', component: MeseroPage }, 
-    { path: 'cocina', component: CocinaPage }, 
-    { path: 'host', component: HostPage }, 
-    { path: 'cajero', component: CajeroPage }, 
-    
-    // Redirección por defecto ante rutas desconocidas 
-    { path: '**', redirectTo: 'login' } ];
+  }, 
+  { 
+    path: 'gerente/reportes-ventas', 
+    loadComponent: () => 
+      import('./features/gerente/reportes-ventas/reportes-ventas').then( 
+        (m) => m.ReportesVentasComponent 
+      ) 
+  }, 
+  { 
+    path: 'gerente/configuracion-turnos', 
+    loadComponent: () => 
+      import('./features/gerente/configuracion-turnos/configuracion-turnos').then( 
+        (m) => m.ConfiguracionTurnosComponent 
+      ) 
+  }, 
+  { 
+    path: 'gerente/validar-arqueo', 
+    loadComponent: () => 
+      import('./features/gerente/validar-arqueo/validar-arqueo').then(
+        (m) => m.ValidarArqueoComponent 
+      ) 
+  }, 
+  { 
+    path: 'gerente/anadir-personal', 
+    loadComponent: () => 
+      import('./features/gerente/anadir-personal/anadir-personal').then( 
+        (m) => m.AnadirPersonalComponent 
+      ) 
+  }, 
+
+  // Ruta principal de Cajero
+  { path: 'cajero', component: CajeroPage },
+  // Submódulos de Cajero (Carga perezosa / Lazy loading)
+  { 
+    path: 'cajero/cobro-comanda', 
+    loadComponent: () => 
+      import('./features/cajero/cobro-comanda/cobro-comanda').then( 
+        (m) => m.CobroComandaComponent 
+      ) 
+  },
+  { 
+    path: 'cajero/mapa-mesas', 
+    loadComponent: () => 
+      import('./features/cajero/mapa-mesas/mapa-mesas').then( 
+        (m) => m.MapaMesasComponent 
+      ) 
+  },
+  { 
+    path: 'cajero/corte-caja', 
+    loadComponent: () => 
+      import('./features/cajero/corte-caja/corte-caja').then( 
+        (m) => m.CorteCajaComponent 
+      ) 
+  },
+
+  // Rutas de los demás roles del equipo 
+  { path: 'mesero', component: MeseroPage }, 
+  { path: 'cocina', component: CocinaPage }, 
+  { path: 'host', component: HostPage }, 
+  
+  // Redirección por defecto ante rutas desconocidas 
+  { path: '**', redirectTo: 'login' } 
+];
