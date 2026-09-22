@@ -1,6 +1,5 @@
 <!-- BANNER SUPERIOR -->
 <header class="header-cajero">
-  <button class="btn-regresar" type="button" (click)="regresar()" aria-label="Regresar a la página anterior">← REGRESAR</button>
   <h1 class="title">SISTEMA DE GESTIÓN OPERATIVA - MÓDULO DE CAJERO</h1>
   <div class="user-info">
     <span>Usuario: Sofía López (Cajero) | Caja Abierta: CAJA 01</span>
@@ -14,30 +13,20 @@
   <section class="col-left">
     <h2 class="section-title">MESAS CON CUENTA SOLICITADA (Rojo)</h2>
 
-    <!-- Tarjeta Mesa 8 (Seleccionada) -->
-    <div class="card-mesa selected">
+    <div 
+      *ngFor="let mesa of mesas" 
+      class="card-mesa" 
+      [class.selected]="mesaSeleccionada?.id === mesa.id"
+      (click)="seleccionarMesa(mesa)">
       <div class="color-indicator red"></div>
       <div class="mesa-info">
-        <h3>Mesa 8 - Salón Central</h3>
-        <p class="subtext">Comanda #1042</p>
-        <p class="subtext">Estado: Esperando Ticket de Pago</p>
+        <h3>{{ mesa.nombre }}</h3>
+        <p class="subtext">Comanda #{{ mesa.comanda }}</p>
+        <p class="subtext">Estado: {{ mesa.estado }}</p>
       </div>
       <div class="mesa-monto">
-        <span class="amount">$540.00 MXN</span>
-        <span class="badge-selected">SELECCIONADA</span>
-      </div>
-    </div>
-
-    <!-- Tarjeta Gab 4 -->
-    <div class="card-mesa">
-      <div class="color-indicator red"></div>
-      <div class="mesa-info">
-        <h3>Gab 4 - Zona Gabinetes Premium</h3>
-        <p class="subtext">Comanda #1039</p>
-        <p class="subtext">Estado: Esperando Ticket de Pago</p>
-      </div>
-      <div class="mesa-monto">
-        <span class="amount">$1,280.00 MXN</span>
+        <span class="amount">${{ mesa.monto | number:'1.2-2' }} MXN</span>
+        <span *ngIf="mesaSeleccionada?.id === mesa.id" class="badge-selected">SELECCIONADA</span>
       </div>
     </div>
 
@@ -45,10 +34,10 @@
     <div class="financial-actions">
       <p class="actions-label">Acciones Financieras para la Cuenta:</p>
       <div class="actions-grid">
-        <button type="button" class="btn btn-outline">Dividir Cuenta</button>
-        <button type="button" class="btn btn-outline">Aplicar Descuento</button>
-        <button type="button" class="btn btn-green">Cobrar Efectivo</button>
-        <button type="button" class="btn btn-blue">Cobrar Tarjeta</button>
+        <button type="button" class="btn btn-outline" (click)="dividirCuenta()">Dividir Cuenta</button>
+        <button type="button" class="btn btn-outline" (click)="aplicarDescuento()">Aplicar Descuento</button>
+        <button type="button" class="btn btn-green" (click)="procesarPago('Efectivo')">Cobrar Efectivo</button>
+        <button type="button" class="btn btn-blue" (click)="procesarPago('Tarjeta')">Cobrar Tarjeta</button>
       </div>
     </div>
   </section>
@@ -62,31 +51,37 @@
 
       <div class="data-row">
         <span>Fondo Inicial de Caja (Apertura):</span>
-        <strong>$1,500.00 MXN</strong>
+        <strong>${{ fondoInicial | number:'1.2-2' }} MXN</strong>
       </div>
       <div class="data-row">
         <span>Efectivo Registrado (Ventas):</span>
-        <strong>$4,850.00 MXN</strong>
+        <strong>${{ efectivoVentas | number:'1.2-2' }} MXN</strong>
       </div>
       <div class="data-row">
         <span>Tarjeta Registrado (Ventas):</span>
-        <strong>$3,120.00 MXN</strong>
+        <strong>${{ tarjetaVentas | number:'1.2-2' }} MXN</strong>
       </div>
       <div class="data-row highlight">
         <span>Total Esperado en Caja (Efectivo):</span>
-        <strong>$6,350.00 MXN</strong>
+        <strong>${{ totalEsperado | number:'1.2-2' }} MXN</strong>
       </div>
 
       <!-- Captura Manual de Efectivo Físico -->
       <div class="input-box">
-        <label>Efectivo Físico Contado (Captura Manual):</label>
-        <div class="input-value">$6,350.00 MXN</div>
+        <span class="input-label">Efectivo Físico Contado (Captura Manual):</span>
+        <input 
+          type="number" 
+          [(ngModel)]="efectivoCapturado" 
+          (input)="calcularDiferencia()" 
+          class="input-value-field" 
+        />
       </div>
 
       <!-- Alerta Diferencia de Caja -->
-      <div class="alert-box green">
-        <strong>DIFERENCIA DE CAJA: $0.00 MXN</strong>
-        <p>✓ Arqueo cuadrado correctamente por Sofía López.</p>
+      <div class="alert-box" [class.green]="diferencia === 0" [class.red]="diferencia !== 0">
+        <strong>DIFERENCIA DE CAJA: ${{ diferencia | number:'1.2-2' }} MXN</strong>
+        <p *ngIf="diferencia === 0">✓ Arqueo cuadrado correctamente por Sofía López.</p>
+        <p *ngIf="diferencia !== 0">⚠️ Se detectó una diferencia en la caja.</p>
       </div>
 
       <!-- Proceso Obligatorio de Relevo -->
@@ -95,11 +90,10 @@
         <p class="relevo-text">
           Deberá imprimir de manera obligatoria el ticket de ventas del empleado en turno antes de que el gerente realice el arqueo.
         </p>
-        <button type="button" class="btn btn-red-action">
+        <button type="button" class="btn btn-red-action" (click)="imprimirTicket()">
           [!] IMPRIMIR TICKET DE VENTAS (RELEVO)
         </button>
       </div>
-
     </div>
   </section>
 
