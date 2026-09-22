@@ -1,0 +1,105 @@
+<!-- BANNER SUPERIOR -->
+<header class="header-cajero">
+  <h1 class="title">SISTEMA DE GESTIÓN OPERATIVA - MÓDULO DE CAJERO</h1>
+  <div class="user-info">
+    <span>Usuario: Sofía López (Cajero) | Caja Abierta: CAJA 01</span>
+  </div>
+</header>
+
+<!-- CONTENEDOR PRINCIPAL -->
+<div class="main-container">
+  
+  <!-- COLUMNA IZQUIERDA: MESAS CON CUENTA SOLICITADA -->
+  <section class="col-left">
+    <h2 class="section-title">MESAS CON CUENTA SOLICITADA (Rojo)</h2>
+
+    <!-- Tarjeta Mesa 8 (Seleccionada) -->
+    <div class="card-mesa selected">
+      <div class="color-indicator red"></div>
+      <div class="mesa-info">
+        <h3>Mesa 8 - Salón Central</h3>
+        <p class="subtext">Comanda #1042</p>
+        <p class="subtext">Estado: Esperando Ticket de Pago</p>
+      </div>
+      <div class="mesa-monto">
+        <span class="amount">$540.00 MXN</span>
+        <span class="badge-selected">SELECCIONADA</span>
+      </div>
+    </div>
+
+    <!-- Tarjeta Gab 4 -->
+    <div class="card-mesa">
+      <div class="color-indicator red"></div>
+      <div class="mesa-info">
+        <h3>Gab 4 - Zona Gabinetes Premium</h3>
+        <p class="subtext">Comanda #1039</p>
+        <p class="subtext">Estado: Esperando Ticket de Pago</p>
+      </div>
+      <div class="mesa-monto">
+        <span class="amount">$1,280.00 MXN</span>
+      </div>
+    </div>
+
+    <!-- Acciones Financieras -->
+    <div class="financial-actions">
+      <p class="actions-label">Acciones Financieras para la Cuenta:</p>
+      <div class="actions-grid">
+        <button type="button" class="btn btn-outline">Dividir Cuenta</button>
+        <button type="button" class="btn btn-outline">Aplicar Descuento</button>
+        <button type="button" class="btn btn-green">Cobrar Efectivo</button>
+        <button type="button" class="btn btn-blue">Cobrar Tarjeta</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLUMNA DERECHA: CORTE DE CAJA -->
+  <section class="col-right">
+    <h2 class="section-title">DETALLE DE COBRO & CONTROL DE CORTE DE CAJA</h2>
+
+    <div class="panel-corte">
+      <h3 class="panel-subtitle">CIERRE DE RELEVO Y ARQUEO FÍSICO</h3>
+
+      <div class="data-row">
+        <span>Fondo Inicial de Caja (Apertura):</span>
+        <strong>$1,500.00 MXN</strong>
+      </div>
+      <div class="data-row">
+        <span>Efectivo Registrado (Ventas):</span>
+        <strong>$4,850.00 MXN</strong>
+      </div>
+      <div class="data-row">
+        <span>Tarjeta Registrado (Ventas):</span>
+        <strong>$3,120.00 MXN</strong>
+      </div>
+      <div class="data-row highlight">
+        <span>Total Esperado en Caja (Efectivo):</span>
+        <strong>$6,350.00 MXN</strong>
+      </div>
+
+      <!-- Captura Manual de Efectivo Físico -->
+      <div class="input-box">
+        <label>Efectivo Físico Contado (Captura Manual):</label>
+        <div class="input-value">$6,350.00 MXN</div>
+      </div>
+
+      <!-- Alerta Diferencia de Caja -->
+      <div class="alert-box green">
+        <strong>DIFERENCIA DE CAJA: $0.00 MXN</strong>
+        <p>✓ Arqueo cuadrado correctamente por Sofía López.</p>
+      </div>
+
+      <!-- Proceso Obligatorio de Relevo -->
+      <div class="relevo-box">
+        <h4 class="relevo-title">PROCESO OBLIGATORIO DE RELEVO DE TURNO:</h4>
+        <p class="relevo-text">
+          Deberá imprimir de manera obligatoria el ticket de ventas del empleado en turno antes de que el gerente realice el arqueo.
+        </p>
+        <button type="button" class="btn btn-red-action">
+          [!] IMPRIMIR TICKET DE VENTAS (RELEVO)
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+</div>
