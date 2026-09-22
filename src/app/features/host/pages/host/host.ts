@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 
 interface Mesa {
   id: number;
@@ -19,6 +19,7 @@ interface Mesa {
     <div class="dashboard-wrapper">
       <!-- HEADER -->
       <header class="app-header">
+        <button class="btn-regresar" type="button" (click)="regresar()" aria-label="Regresar a la página anterior">← REGRESAR</button>
         <div class="brand">
           <div class="logo-icon">🍽️</div>
           <div>
@@ -251,6 +252,7 @@ interface Mesa {
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
       margin-bottom: 20px;
     }
+    .btn-regresar { background: transparent; color: white; border: 1px solid #94a3b8; padding: 7px 11px; border-radius: 5px; font-weight: 700; cursor: pointer; }
     .brand { display: flex; align-items: center; gap: 14px; }
     .logo-icon { font-size: 1.8rem; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 10px; }
     .app-header h1 { font-size: 1.15rem; margin: 0; font-weight: 700; }
@@ -428,6 +430,12 @@ interface Mesa {
   `]
 })
 export class HostPage {
+  constructor(private readonly location: Location) {}
+
+  regresar(): void {
+    this.location.back();
+  }
+
   mesas: Mesa[] = [
     // Gabinetes superiores
     { id: 1, nombre: 'Gab 1', zona: 'gabinetes', capacidad: 4, estado: 'servicio' },

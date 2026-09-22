@@ -8,6 +8,16 @@ $green-accent: #2e7d32;
 $red-danger: #d32f2f;
 $orange-warning: #f57c00;
 
+.back-button {
+  padding: 6px 11px;
+  color: #ffffff;
+  background: transparent;
+  border: 1px solid #8fa4c0;
+  border-radius: 4px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 * {
   box-sizing: border-box;
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;

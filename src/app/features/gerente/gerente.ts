@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
@@ -25,7 +26,11 @@ interface Denominacion {
 })
 export class GerenteComponent implements OnInit {
 
-  constructor(private readonly router: Router) {}
+  constructor(private readonly router: Router, private readonly location: Location) {}
+
+  regresar(): void {
+    this.location.back();
+  }
 
   ventasTarjeta: number = 2800.00;
   ventasEfectivo: number = 3450.00;

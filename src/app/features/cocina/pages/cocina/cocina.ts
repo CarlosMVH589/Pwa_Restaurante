@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 
 interface ItemMenu {
   nombre: string;
@@ -23,6 +23,12 @@ interface OrdenKDS {
   styleUrls: ['./cocina.component.css']
 })
 export class CocinaPage {
+  constructor(private readonly location: Location) {}
+
+  regresar(): void {
+    this.location.back();
+  }
+
   menuItems: ItemMenu[] = [
     { nombre: 'Taco de Barbacoa', disponible: true },
     { nombre: 'Sopa Azteca', disponible: true },

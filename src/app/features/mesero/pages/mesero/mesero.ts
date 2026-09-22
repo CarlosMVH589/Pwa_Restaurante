@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component } from '@angular/core';
 
 type EstadoMesa = 'disponible' | 'preparando' | 'entregada' | 'demora' | 'limpieza';
@@ -29,6 +29,12 @@ interface Platillo {
   styleUrl: './mesero.scss',
 })
 export class MeseroPage {
+  constructor(private readonly location: Location) {}
+
+  regresar(): void {
+    this.location.back();
+  }
+
   mesas: Mesa[] = [
     { id: 1, nombre: 'Gab 1', zona: 'gabinetes', estado: 'entregada', capacidad: 4, progreso: 100 },
     { id: 2, nombre: 'Gab 2', zona: 'gabinetes', estado: 'disponible', capacidad: 4, progreso: 0 },
