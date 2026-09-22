@@ -1,0 +1,39 @@
+<div class="mesero-shell">
+  <header class="app-header">
+    <div class="brand"><span class="brand-mark">+</span><h1>SISTEMA DE GESTIÓN OPERATIVA - RESTAURANTE</h1></div>
+    <div class="role">ROL: MESERO</div>
+    <div class="staff"><span class="avatar">MR</span><span>María R.</span><button class="exit-button" type="button">SALIR</button></div>
+  </header>
+
+  <main class="workspace">
+    <section class="map-card panel">
+      <div class="section-heading">
+        <div><p class="eyebrow">OPERACIÓN EN TIEMPO REAL</p><h2>PLANO OPERATIVO DEL RESTAURANTE</h2><p class="helper">Selecciona una mesa para consultar su pedido y ejecutar acciones.</p></div>
+        <span class="live"><i></i> ACTUALIZADO AHORA</span>
+      </div>
+
+      <div class="floor-plan" aria-label="Mapa de mesas del restaurante">
+        <div class="entrance">ACCESO PRINCIPAL</div>
+        <div class="floor-body">
+          <section class="zone private-zone"><h3>ÁREA PRIVADOS</h3><div class="private-tables"><button *ngFor="let mesa of getMesasPorZona('privados')" type="button" class="table-seat" [class.selected]="mesa === mesaSeleccionada" [class]="'table-seat ' + mesa.estado" (click)="seleccionarMesa(mesa)" [attr.aria-label]="mesa.nombre + ', ' + etiquetaEstado(mesa.estado)"><span class="table-capacity">{{ mesa.capacidad }}p</span><span class="table-number">{{ mesa.id - 100 }}</span><span class="table-name">{{ mesa.nombre }}</span><span class="table-state">{{ etiquetaEstado(mesa.estado) }}</span></button></div></section>
+          <section class="zone central-zone"><div class="zone-subsection"><h3>GABINETES</h3><div class="cabinet-grid"><button *ngFor="let mesa of getMesasPorZona('gabinetes')" type="button" class="table-seat" [class.selected]="mesa === mesaSeleccionada" [class]="'table-seat ' + mesa.estado" (click)="seleccionarMesa(mesa)" [attr.aria-label]="mesa.nombre + ', ' + etiquetaEstado(mesa.estado)"><span class="table-capacity">{{ mesa.capacidad }}p</span><span class="table-number">{{ mesa.id }}</span><span class="table-name">{{ mesa.nombre }}</span><span class="table-state">{{ etiquetaEstado(mesa.estado) }}</span></button></div></div><div class="zone-subsection salon"><h3>SALÓN CENTRAL</h3><div class="central-grid"><button *ngFor="let mesa of getMesasPorZona('central')" type="button" class="table-seat" [class.selected]="mesa === mesaSeleccionada" [class]="'table-seat ' + mesa.estado" (click)="seleccionarMesa(mesa)" [attr.aria-label]="mesa.nombre + ', ' + etiquetaEstado(mesa.estado)"><span class="table-capacity">{{ mesa.capacidad }}p</span><span class="table-number">{{ mesa.id - 4 }}</span><span class="table-name">{{ mesa.nombre }}</span><span class="table-state">{{ etiquetaEstado(mesa.estado) }}</span></button></div></div></section>
+          <section class="zone bar-zone"><h3>BARRA</h3><div class="bar-tables"><button *ngFor="let mesa of getMesasPorZona('barra')" type="button" class="table-seat" [class.selected]="mesa === mesaSeleccionada" [class]="'table-seat ' + mesa.estado" (click)="seleccionarMesa(mesa)" [attr.aria-label]="mesa.nombre + ', ' + etiquetaEstado(mesa.estado)"><span class="table-capacity">{{ mesa.capacidad }}p</span><span class="table-number">{{ mesa.id - 200 }}</span><span class="table-name">{{ mesa.nombre }}</span><span class="table-state">{{ etiquetaEstado(mesa.estado) }}</span></button></div></section>
+        </div>
+        <div class="legend" aria-label="Estados de mesa"><span><i class="dot available"></i>Disponible</span><span><i class="dot ready"></i>Entregada</span><span><i class="dot cooking"></i>Preparando</span><span><i class="dot delay"></i>Demora</span><span><i class="dot clean"></i>Limpieza</span></div>
+      </div>
+
+      <div class="map-summary"><strong>{{ mesas.length }} mesas monitoreadas</strong><span>{{ mesasEnPreparacion }} en preparación</span><span class="alert-text">{{ mesasConDemora }} con demora</span></div>
+    </section>
+
+    <aside class="details-column"><section class="panel details-card">
+      <div class="detail-title"><div><p class="eyebrow">DETALLES DE MESA SELECCIONADA</p><h2>{{ mesaSeleccionada.nombre }}</h2><span class="zone-name">{{ etiquetaZona(mesaSeleccionada.zona) }}</span></div><span class="capacity">{{ mesaSeleccionada.capacidad }} personas</span></div>
+      <div class="state-banner" [class]="mesaSeleccionada.estado"><strong>ESTADO: {{ etiquetaEstado(mesaSeleccionada.estado) | uppercase }}</strong><span>{{ mesaSeleccionada.nota || 'Sin observaciones registradas.' }}</span></div>
+      <div class="progress-section"><div class="subheading"><h3>AVANCE DE COMANDA</h3><strong>{{ mesaSeleccionada.progreso }}%</strong></div><p class="helper">{{ platillosListos() }} de {{ platillos.length }} platillos listos</p><div class="progress-track"><span [style.width.%]="mesaSeleccionada.progreso"></span></div><div class="progress-labels"><span>Recibida</span><span>En cocina</span><span>Entregada</span></div></div>
+      <div class="dishes"><h3>DESGLOSE DE PLATILLOS</h3><div *ngFor="let platillo of platillos" class="dish-row"><div><strong>{{ platillo.nombre }}</strong><small>{{ platillo.detalle }}</small></div><span class="dish-status" [class]="platillo.estado">{{ platillo.estado | uppercase }}</span></div></div>
+      <div class="actions"><button type="button" class="action primary" (click)="agregarPedido()"><span>+</span> AGREGAR PEDIDO EXTRA</button><button type="button" class="action success" (click)="solicitarConfirmacion('entrega')">CONFIRMAR ENTREGA COMPLETA</button><button type="button" class="action danger" (click)="solicitarConfirmacion('cuenta')">MARCAR CUENTA SOLICITADA</button></div>
+      <p *ngIf="aviso" class="success-message" role="status">{{ aviso }}</p>
+    </section></aside>
+  </main>
+
+  <div *ngIf="accionPendiente" class="modal-backdrop" role="presentation" (click)="cerrarConfirmacion()"><section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" (click)="$event.stopPropagation()"><span class="warning-icon">!</span><h2 id="confirm-title">¿Confirmar acción?</h2><p>{{ accionPendiente === 'entrega' ? 'La mesa pasará a Entregada y se cerrará su avance de cocina.' : 'Se registrará que el cliente solicitó la cuenta.' }}</p><div class="dialog-actions"><button type="button" class="cancel" (click)="cerrarConfirmacion()">CANCELAR</button><button type="button" class="confirm" (click)="confirmarAccion()">CONFIRMAR</button></div></section></div>
+</div>
