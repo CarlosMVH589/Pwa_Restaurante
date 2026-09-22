@@ -25,3 +25,4 @@ describe('ReportesVentasComponent', () => {
     expect(component.transaccionesCount).toBe(26);
   });
 });
+//comentario

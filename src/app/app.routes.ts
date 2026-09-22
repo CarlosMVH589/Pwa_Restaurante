@@ -5,7 +5,7 @@ import { CocinaPage } from './features/cocina/pages/cocina/cocina';
 import { GerenteComponent } from './features/gerente/gerente';
 import { HostPage } from './features/host/pages/host/host';
 import { MeseroPage } from './features/mesero/pages/mesero/mesero';
-
+//comentario
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginPage },

@@ -65,7 +65,7 @@ export class ValidarArqueoComponent {
       this.errorMensaje = 'Debes ingresar una justificación válida de al menos 10 caracteres.';
       return;
     }
-
+//comentario
     if (this.pinGerente.trim().length < 4) {
       this.errorMensaje = 'Por favor ingresa un PIN de gerente válido (mínimo 4 dígitos).';
       return;

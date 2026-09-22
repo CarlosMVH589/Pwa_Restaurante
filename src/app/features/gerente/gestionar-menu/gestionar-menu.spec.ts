@@ -19,7 +19,7 @@ describe('GestionarMenuComponent', () => {
   it('debería crearse correctamente', () => {
     expect(component).toBeTruthy();
   });
-
+//comentario
   it('debería filtrar platillos por término de búsqueda', () => {
     component.searchTerm = 'Sopa';
     fixture.detectChanges();

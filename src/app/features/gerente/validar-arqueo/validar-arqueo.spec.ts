@@ -23,7 +23,7 @@ describe('ValidarArqueoComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
-
+//comentario
   it('debería crearse correctamente', () => {
     expect(component).toBeTruthy();
   });

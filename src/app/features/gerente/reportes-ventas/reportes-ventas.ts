@@ -17,6 +17,7 @@ interface TopProducto {
   monto: number;
   porcentajeAncho: number;
 }
+//comentario
 
 @Component({
   selector: 'app-reportes-ventas',

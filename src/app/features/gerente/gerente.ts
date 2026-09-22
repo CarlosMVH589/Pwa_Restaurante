@@ -56,7 +56,7 @@ export class GerenteComponent implements OnInit {
     { denominacion: '$10 Monedas', valor: 10, cantidad: 5 },
     { denominacion: '$5 Monedas', valor: 5, cantidad: 0 }
   ];
-
+//comentario
   totalArqueado: number = 0;
   diferencia: number = 0;
 

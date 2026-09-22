@@ -16,7 +16,7 @@ interface Categoria {
   nombre: string;
   count: number;
 }
-
+//comentario
 @Component({
   selector: 'app-gestionar-menu',
   standalone: true,

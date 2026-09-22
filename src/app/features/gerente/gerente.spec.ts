@@ -40,3 +40,4 @@ describe('GerenteComponent', () => {
     expect(component.diferencia).toBe(500);
   });
 });
+//comentario
