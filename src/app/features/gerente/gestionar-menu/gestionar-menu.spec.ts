@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
+import { provideRouter } from '@angular/router';
 import { GestionarMenuComponent } from './gestionar-menu';
 
 describe('GestionarMenuComponent', () => {
@@ -8,7 +9,8 @@ describe('GestionarMenuComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [GestionarMenuComponent, FormsModule]
+      imports: [GestionarMenuComponent, FormsModule],
+      providers: [provideRouter([])]
     }).compileComponents();
 
     fixture = TestBed.createComponent(GestionarMenuComponent);
