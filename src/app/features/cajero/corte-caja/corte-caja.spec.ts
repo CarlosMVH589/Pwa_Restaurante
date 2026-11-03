@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { CorteCaja } from './corte-caja';
+import { CorteCajaComponent } from './corte-caja';
 
-describe('CorteCaja', () => {
-  let component: CorteCaja;
-  let fixture: ComponentFixture<CorteCaja>;
+describe('CorteCajaComponent', () => {
+  let component: CorteCajaComponent;
+  let fixture: ComponentFixture<CorteCajaComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CorteCaja],
+      imports: [CorteCajaComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(CorteCaja);
+    fixture = TestBed.createComponent(CorteCajaComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

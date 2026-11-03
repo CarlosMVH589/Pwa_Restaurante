@@ -5,16 +5,18 @@ import { CocinaPage } from './features/cocina/pages/cocina/cocina';
 import { GerenteComponent } from './features/gerente/gerente'; 
 import { HostPage } from './features/host/pages/host/host'; 
 import { MeseroPage } from './features/mesero/pages/mesero/mesero'; 
+import { roleGuard } from './core/auth/role.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginPage },
 
   // Ruta principal de Gerente 
-  { path: 'gerente', component: GerenteComponent },
+  { path: 'gerente', component: GerenteComponent, canActivate: [roleGuard], data: { roles: ['gerente'] } },
   // Submódulos de Gerente (Carga perezosa / Lazy loading) 
   { 
     path: 'gerente/gestionar-menu', 
+    canActivate: [roleGuard], data: { roles: ['gerente'] },
     loadComponent: () => 
       import('./features/gerente/gestionar-menu/gestionar-menu').then( 
         (m) => m.GestionarMenuComponent 
@@ -22,6 +24,7 @@ export const routes: Routes = [
   }, 
   { 
     path: 'gerente/reportes-ventas', 
+    canActivate: [roleGuard], data: { roles: ['gerente'] },
     loadComponent: () => 
       import('./features/gerente/reportes-ventas/reportes-ventas').then( 
         (m) => m.ReportesVentasComponent 
@@ -29,6 +32,7 @@ export const routes: Routes = [
   }, 
   { 
     path: 'gerente/configuracion-turnos', 
+    canActivate: [roleGuard], data: { roles: ['gerente'] },
     loadComponent: () => 
       import('./features/gerente/configuracion-turnos/configuracion-turnos').then( 
         (m) => m.ConfiguracionTurnosComponent 
@@ -36,6 +40,7 @@ export const routes: Routes = [
   }, 
   { 
     path: 'gerente/validar-arqueo', 
+    canActivate: [roleGuard], data: { roles: ['gerente'] },
     loadComponent: () => 
       import('./features/gerente/validar-arqueo/validar-arqueo').then(
         (m) => m.ValidarArqueoComponent 
@@ -43,6 +48,7 @@ export const routes: Routes = [
   }, 
   { 
     path: 'gerente/anadir-personal', 
+    canActivate: [roleGuard], data: { roles: ['gerente'] },
     loadComponent: () => 
       import('./features/gerente/anadir-personal/anadir-personal').then( 
         (m) => m.AnadirPersonalComponent 
@@ -50,10 +56,11 @@ export const routes: Routes = [
   }, 
 
   // Ruta principal de Cajero
-  { path: 'cajero', component: CajeroPage },
+  { path: 'cajero', component: CajeroPage, canActivate: [roleGuard], data: { roles: ['cajero'] } },
   // Submódulos de Cajero (Carga perezosa / Lazy loading)
   { 
     path: 'cajero/cobro-comanda', 
+    canActivate: [roleGuard], data: { roles: ['cajero'] },
     loadComponent: () => 
       import('./features/cajero/cobro-comanda/cobro-comanda').then( 
         (m) => m.CobroComandaComponent 
@@ -61,6 +68,7 @@ export const routes: Routes = [
   },
   { 
     path: 'cajero/mapa-mesas', 
+    canActivate: [roleGuard], data: { roles: ['cajero'] },
     loadComponent: () => 
       import('./features/cajero/mapa-mesas/mapa-mesas').then( 
         (m) => m.MapaMesasComponent 
@@ -68,6 +76,7 @@ export const routes: Routes = [
   },
   { 
     path: 'cajero/corte-caja', 
+    canActivate: [roleGuard], data: { roles: ['cajero'] },
     loadComponent: () => 
       import('./features/cajero/corte-caja/corte-caja').then( 
         (m) => m.CorteCajaComponent 
@@ -75,9 +84,9 @@ export const routes: Routes = [
   },
 
   // Rutas de los demás roles del equipo 
-  { path: 'mesero', component: MeseroPage }, 
-  { path: 'cocina', component: CocinaPage }, 
-  { path: 'host', component: HostPage }, 
+  { path: 'mesero', component: MeseroPage, canActivate: [roleGuard], data: { roles: ['mesero'] } },
+  { path: 'cocina', component: CocinaPage, canActivate: [roleGuard], data: { roles: ['cocina'] } },
+  { path: 'host', component: HostPage, canActivate: [roleGuard], data: { roles: ['host'] } },
   
   // Redirección por defecto ante rutas desconocidas 
   { path: '**', redirectTo: 'login' } 

@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { CobroComanda } from './cobro-comanda';
+import { CobroComandaComponent } from './cobro-comanda';
 
-describe('CobroComanda', () => {
-  let component: CobroComanda;
-  let fixture: ComponentFixture<CobroComanda>;
+describe('CobroComandaComponent', () => {
+  let component: CobroComandaComponent;
+  let fixture: ComponentFixture<CobroComandaComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CobroComanda],
+      imports: [CobroComandaComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(CobroComanda);
+    fixture = TestBed.createComponent(CobroComandaComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

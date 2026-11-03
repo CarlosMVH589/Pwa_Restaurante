@@ -3,7 +3,11 @@
     <div class="logo-area">RESTAURANT</div>
     <div class="titulo-area">INTERFAZ: COCINA - TABLERO DE AVANCE</div>
     <div class="usuario-area">
-      Cocina Principal (Chef Lucas) | <button class="btn-salir" type="button" (click)="regresar()" aria-label="Regresar a la página anterior">SALIR</button>
+      Cocina Principal (Chef Lucas) |
+      <span class="connection-status" [class.connected]="realtime.conexion() === 'conectado'" role="status">
+        {{ realtime.conexion() === 'conectado' ? 'En tiempo real' : realtime.conexion() === 'conectando' ? 'Conectando…' : 'Sin conexión' }}
+      </span>
+      <button class="btn-salir" type="button" (click)="regresar()" aria-label="Cerrar sesión">SALIR</button>
     </div>
   </header>
 
@@ -14,9 +18,9 @@
         <h3>MENÚ / DISPONIBILIDAD</h3>
         <p>Marcar agotado para meseros</p>
       </div>
-      <div class="menu-card" *ngFor="let item of menuItems" (click)="toggleDisponibilidad(item)">
+      <div class="menu-card" *ngFor="let item of menuItems">
         <span class="item-nombre">{{ item.nombre }}</span>
-        <button [ngClass]="item.disponible ? 'badge-disponible' : 'badge-agotado'">
+        <button type="button" [disabled]="realtime.conexion() !== 'conectado'" [ngClass]="item.disponible ? 'badge-disponible' : 'badge-agotado'" (click)="toggleDisponibilidad(item)">
           {{ item.disponible ? 'DISPONIBLE' : 'AGOTADO' }}
         </button>
       </div>
@@ -37,10 +41,10 @@
             <div class="orden-card" *ngFor="let orden of getOrdenesPorEstado('pendiente')">
               <h4>{{ orden.platillo }}</h4>
               <p>🍽️ {{ orden.mesa }}</p>
-              <p class="tiempo">{{ orden.tiempo }}</p>
+              <p class="tiempo">{{ orden.horaSolicitud }} · {{ orden.cantidad }} pza.</p>
               <p class="comanda">Comanda: {{ orden.comanda }}</p>
               <div class="card-actions">
-                <button class="btn-flecha" (click)="avanzarEstado(orden)">→</button>
+                <button class="btn-flecha" type="button" [disabled]="realtime.conexion() !== 'conectado'" (click)="avanzarEstado(orden)">→</button>
               </div>
             </div>
           </div>
@@ -53,11 +57,11 @@
             <div class="orden-card" *ngFor="let orden of getOrdenesPorEstado('preparacion')">
               <h4>{{ orden.platillo }}</h4>
               <p>🍽️ {{ orden.mesa }}</p>
-              <p class="tiempo">{{ orden.tiempo }}</p>
+              <p class="tiempo">{{ orden.horaSolicitud }} · {{ orden.cantidad }} pza.</p>
               <p class="comanda">Comanda: {{ orden.comanda }}</p>
               <div class="card-actions">
-                <button class="btn-flecha" (click)="retrocederEstado(orden)">←</button>
-                <button class="btn-flecha" (click)="avanzarEstado(orden)">→</button>
+                <button class="btn-flecha" type="button" [disabled]="realtime.conexion() !== 'conectado'" (click)="retrocederEstado(orden)">←</button>
+                <button class="btn-flecha" type="button" [disabled]="realtime.conexion() !== 'conectado'" (click)="avanzarEstado(orden)">→</button>
               </div>
             </div>
           </div>
@@ -70,11 +74,10 @@
             <div class="orden-card" *ngFor="let orden of getOrdenesPorEstado('listo')">
               <h4>{{ orden.platillo }}</h4>
               <p>🍽️ {{ orden.mesa }}</p>
-              <p class="tiempo">{{ orden.tiempo }}</p>
+              <p class="tiempo">{{ orden.horaSolicitud }} · {{ orden.cantidad }} pza.</p>
               <p class="comanda">Comanda: {{ orden.comanda }}</p>
               <div class="card-actions">
-                <button class="btn-flecha" (click)="retrocederEstado(orden)">←</button>
-                <button class="btn-flecha" (click)="avanzarEstado(orden)">→</button>
+                <button class="btn-flecha" type="button" [disabled]="realtime.conexion() !== 'conectado'" (click)="retrocederEstado(orden)">←</button>
               </div>
             </div>
           </div>
@@ -87,11 +90,8 @@
             <div class="orden-card" *ngFor="let orden of getOrdenesPorEstado('entregado')">
               <h4>{{ orden.platillo }}</h4>
               <p>🍽️ {{ orden.mesa }}</p>
-              <p class="tiempo">{{ orden.tiempo }}</p>
+              <p class="tiempo">{{ orden.horaSolicitud }} · {{ orden.cantidad }} pza.</p>
               <p class="comanda">Comanda: {{ orden.comanda }}</p>
-              <div class="card-actions">
-                <button class="btn-flecha" (click)="retrocederEstado(orden)">←</button>
-              </div>
             </div>
           </div>
         </div>

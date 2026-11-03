@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from '../../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -255,26 +256,16 @@ export class LoginPage {
   contrasena = '';
   errorMessage = '';
 
-  private readonly usuarios = {
-    cajero: { password: 'cajero123', route: '/cajero' },
-    cocina: { password: 'cocina123', route: '/cocina' },
-    gerente: { password: 'gerente123', route: '/gerente' },
-    host: { password: 'host123', route: '/host' },
-    mesero: { password: 'mesero123', route: '/mesero' }
-  } as const;
-
-  constructor(private readonly router: Router) {}
+  constructor(private readonly router: Router, private readonly auth: AuthService) {}
 
   iniciarSesion() {
-    const credenciales = this.usuarios[this.usuario.trim().toLowerCase() as keyof typeof this.usuarios];
-
-    if (!credenciales || credenciales.password !== this.contrasena) {
+    const ruta = this.auth.iniciarSesion(this.usuario, this.contrasena);
+    if (!ruta) {
       this.errorMessage = 'Usuario o contraseña incorrectos.';
       return;
     }
 
     this.errorMessage = '';
-    localStorage.setItem('usuarioActivo', this.usuario.trim().toLowerCase());
-    void this.router.navigateByUrl(credenciales.route);
+    void this.router.navigateByUrl(ruta);
   }
 }

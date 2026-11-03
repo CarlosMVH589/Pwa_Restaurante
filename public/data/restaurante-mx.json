@@ -1,0 +1,46 @@
+{
+  "restaurante": {
+    "nombre": "Restaurante La Mesa",
+    "ciudad": "Ciudad de México",
+    "estado": "Ciudad de México",
+    "pais": "MX",
+    "locale": "es-MX",
+    "moneda": "MXN",
+    "zonaHoraria": "America/Mexico_City"
+  },
+  "menuItems": [
+    { "nombre": "Taco de barbacoa", "precio": 48, "disponible": true },
+    { "nombre": "Sopa azteca", "precio": 95, "disponible": true },
+    { "nombre": "Ensalada de nopales", "precio": 110, "disponible": false },
+    { "nombre": "Hamburguesa BBQ", "precio": 165, "disponible": true },
+    { "nombre": "Papas a la francesa", "precio": 65, "disponible": true },
+    { "nombre": "Flan de la casa", "precio": 72, "disponible": false },
+    { "nombre": "Agua de jamaica", "precio": 38, "disponible": true }
+  ],
+  "mesas": [
+    { "id": 1, "nombre": "Gab 1", "zona": "gabinetes", "estado": "entregada", "capacidad": 4, "progreso": 100 },
+    { "id": 2, "nombre": "Gab 2", "zona": "gabinetes", "estado": "disponible", "capacidad": 4, "progreso": 0 },
+    { "id": 3, "nombre": "Gab 3", "zona": "gabinetes", "estado": "preparando", "capacidad": 4, "progreso": 66, "nota": "Postre extra" },
+    { "id": 4, "nombre": "Gab 4", "zona": "gabinetes", "estado": "demora", "capacidad": 4, "progreso": 50, "nota": "Esperando guarnición" },
+    { "id": 101, "nombre": "Privado 1", "zona": "privados", "estado": "entregada", "capacidad": 6, "progreso": 100 },
+    { "id": 102, "nombre": "Privado 2", "zona": "privados", "estado": "limpieza", "capacidad": 6, "progreso": 0 },
+    { "id": 103, "nombre": "Privado 3", "zona": "privados", "estado": "disponible", "capacidad": 6, "progreso": 0 },
+    { "id": 5, "nombre": "Mesa 1", "zona": "central", "estado": "disponible", "capacidad": 4, "progreso": 0 },
+    { "id": 6, "nombre": "Mesa 2", "zona": "central", "estado": "entregada", "capacidad": 4, "progreso": 100 },
+    { "id": 7, "nombre": "Mesa 3", "zona": "central", "estado": "preparando", "capacidad": 4, "progreso": 33, "nota": "Hamburguesa sin cebolla" },
+    { "id": 8, "nombre": "Mesa 4", "zona": "central", "estado": "disponible", "capacidad": 4, "progreso": 0 },
+    { "id": 9, "nombre": "Mesa 5", "zona": "central", "estado": "limpieza", "capacidad": 2, "progreso": 0 },
+    { "id": 10, "nombre": "Mesa 6", "zona": "central", "estado": "disponible", "capacidad": 2, "progreso": 0 },
+    { "id": 201, "nombre": "Barra 1", "zona": "barra", "estado": "entregada", "capacidad": 1, "progreso": 100 },
+    { "id": 202, "nombre": "Barra 2", "zona": "barra", "estado": "disponible", "capacidad": 1, "progreso": 0 },
+    { "id": 203, "nombre": "Barra 3", "zona": "barra", "estado": "preparando", "capacidad": 1, "progreso": 66 }
+  ],
+  "ordenes": [
+    { "id": "1", "comanda": "#104", "mesaId": 7, "mesa": "Mesa 3", "platillo": "Hamburguesa BBQ", "detalle": "Sin cebolla", "cantidad": 1, "precio": 165, "estado": "pendiente", "horaSolicitud": "13:15" },
+    { "id": "2", "comanda": "#105", "mesaId": 5, "mesa": "Mesa 1", "platillo": "Flan de la casa", "detalle": "Con cajeta", "cantidad": 1, "precio": 72, "estado": "pendiente", "horaSolicitud": "13:18" },
+    { "id": "3", "comanda": "#104", "mesaId": 7, "mesa": "Mesa 3", "platillo": "Sopa azteca", "detalle": "Sin crema", "cantidad": 1, "precio": 95, "estado": "preparacion", "horaSolicitud": "13:10" },
+    { "id": "4", "comanda": "#098", "mesaId": 8, "mesa": "Mesa 4", "platillo": "Ensalada de nopales", "detalle": "Aderezo aparte", "cantidad": 1, "precio": 110, "estado": "preparacion", "horaSolicitud": "13:05" },
+    { "id": "5", "comanda": "#104", "mesaId": 7, "mesa": "Mesa 3", "platillo": "Taco de barbacoa", "detalle": "Dos piezas", "cantidad": 2, "precio": 96, "estado": "listo", "horaSolicitud": "13:08" },
+    { "id": "6", "comanda": "#098", "mesaId": 8, "mesa": "Mesa 4", "platillo": "Agua de jamaica", "detalle": "Sin hielo", "cantidad": 1, "precio": 38, "estado": "entregado", "horaSolicitud": "12:50" }
+  ]
+}

@@ -9,7 +9,9 @@
     <section class="map-card panel">
       <div class="section-heading">
         <div><p class="eyebrow">OPERACIÓN EN TIEMPO REAL</p><h2>PLANO OPERATIVO DEL RESTAURANTE</h2><p class="helper">Selecciona una mesa para consultar su pedido y ejecutar acciones.</p></div>
-        <span class="live"><i></i> ACTUALIZADO AHORA</span>
+        <span class="live" [class.disconnected]="realtime.conexion() !== 'conectado'" role="status">
+          <i></i>{{ realtime.conexion() === 'conectado' ? 'EN TIEMPO REAL' : realtime.conexion() === 'conectando' ? 'CONECTANDO CON COCINA' : 'SIN CONEXIÓN' }}
+        </span>
       </div>
 
       <div class="floor-plan" aria-label="Mapa de mesas del restaurante">
@@ -30,10 +32,10 @@
       <div class="state-banner" [class]="mesaSeleccionada.estado"><strong>ESTADO: {{ etiquetaEstado(mesaSeleccionada.estado) | uppercase }}</strong><span>{{ mesaSeleccionada.nota || 'Sin observaciones registradas.' }}</span></div>
       <div class="progress-section"><div class="subheading"><h3>AVANCE DE COMANDA</h3><strong>{{ mesaSeleccionada.progreso }}%</strong></div><p class="helper">{{ platillosListos() }} de {{ platillos.length }} platillos listos</p><div class="progress-track"><span [style.width.%]="mesaSeleccionada.progreso"></span></div><div class="progress-labels"><span>Recibida</span><span>En cocina</span><span>Entregada</span></div></div>
       <div class="dishes"><h3>DESGLOSE DE PLATILLOS</h3><div *ngFor="let platillo of platillos" class="dish-row"><div><strong>{{ platillo.nombre }}</strong><small>{{ platillo.detalle }}</small></div><span class="dish-status" [class]="platillo.estado">{{ platillo.estado | uppercase }}</span></div></div>
-      <div class="actions"><button type="button" class="action primary" (click)="agregarPedido()"><span>+</span> AGREGAR PEDIDO EXTRA</button><button type="button" class="action success" (click)="solicitarConfirmacion('entrega')">CONFIRMAR ENTREGA COMPLETA</button><button type="button" class="action danger" (click)="solicitarConfirmacion('cuenta')">MARCAR CUENTA SOLICITADA</button></div>
+      <div class="actions"><button type="button" class="action primary" (click)="agregarPedido()"><span>+</span> AGREGAR PEDIDO EXTRA</button><button type="button" class="action success" [disabled]="realtime.conexion() !== 'conectado'" (click)="solicitarConfirmacion('entrega')">CONFIRMAR ENTREGA COMPLETA</button><button type="button" class="action danger" (click)="solicitarConfirmacion('cuenta')">MARCAR CUENTA SOLICITADA</button></div>
       <p *ngIf="aviso" class="success-message" role="status">{{ aviso }}</p>
     </section></aside>
   </main>
 
-  <div *ngIf="accionPendiente" class="modal-backdrop" role="presentation" (click)="cerrarConfirmacion()"><section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" (click)="$event.stopPropagation()"><span class="warning-icon">!</span><h2 id="confirm-title">¿Confirmar acción?</h2><p>{{ accionPendiente === 'entrega' ? 'La mesa pasará a Entregada y se cerrará su avance de cocina.' : 'Se registrará que el cliente solicitó la cuenta.' }}</p><div class="dialog-actions"><button type="button" class="cancel" (click)="cerrarConfirmacion()">CANCELAR</button><button type="button" class="confirm" (click)="confirmarAccion()">CONFIRMAR</button></div></section></div>
+  <div *ngIf="accionPendiente" class="modal-backdrop" role="presentation" (click)="cerrarConfirmacion()"><section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" (click)="$event.stopPropagation()"><span class="warning-icon">!</span><h2 id="confirm-title">¿Confirmar acción?</h2><p>{{ accionPendiente === 'entrega' ? 'Se marcarán como entregados los platillos listos de esta mesa. La mesa seguirá en proceso si quedan órdenes pendientes.' : 'Se registrará que el cliente solicitó la cuenta.' }}</p><div class="dialog-actions"><button type="button" class="cancel" (click)="cerrarConfirmacion()">CANCELAR</button><button type="button" class="confirm" (click)="confirmarAccion()">CONFIRMAR</button></div></section></div>
 </div>
