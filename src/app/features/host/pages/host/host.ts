@@ -1,12 +1,16 @@
-import { Component } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { RestaurantTable, TableStatus, TableZone } from '../../../../core/orders/order.model';
+import { RealtimeOrdersService } from '../../../../core/orders/realtime-orders.service';
 
 interface Mesa {
   id: number;
   nombre: string;
   zona: 'central' | 'privados' | 'gabinetes' | 'barra';
   capacidad: number;
-  estado: 'disponible' | 'servicio' | 'preparacion' | 'demorado' | 'limpieza';
+  estado: TableStatus;
   tiempoMinutos?: number;
   sugerida?: boolean;
 }
@@ -30,6 +34,7 @@ interface Mesa {
         <div class="user-badge">
           <span class="user-name">Juan Pérez (Host)</span>
           <span class="shift-tag">Turno Matutino</span>
+          <button class="btn-regresar" type="button" (click)="regresar()">CERRAR SESIÓN</button>
         </div>
       </header>
 
@@ -45,7 +50,7 @@ interface Mesa {
           </div>
         </div>
         <button class="btn-sugerida" (click)="resaltarSugerida()">
-          🎯 Ver en Plano
+           Ver en Plano
         </button>
       </section>
 
@@ -64,7 +69,7 @@ interface Mesa {
             
             <!-- ENTRADA / ACCESO -->
             <div class="zona-acceso">
-              <span>🚪 ACCESO PRINCIPAL</span>
+              <span> ACCESO PRINCIPAL</span>
             </div>
 
             <div class="plano-cuerpo">
@@ -166,7 +171,7 @@ interface Mesa {
             </div>
 
             <!-- ALERTA DE DEMORA (Heurística 9) -->
-            <div *ngIf="mesaSeleccionada.estado === 'demorado'" class="alert-box">
+            <div *ngIf="mesaSeleccionada.estado === 'demora'" class="alert-box">
               <div class="alert-header">
                 <span class="alert-icon">⚠️</span>
                 <strong>Alerta por Retraso</strong>
@@ -178,19 +183,19 @@ interface Mesa {
             <!-- BOTONES DE CAMBIO DE ESTADO -->
             <div class="actions-list">
               <label class="actions-title">Cambiar Estado a:</label>
-              <button class="btn-action disponible" (click)="cambiarEstado('disponible')">
+              <button class="btn-action disponible" [disabled]="mesaEnLimpieza" (click)="cambiarEstado('disponible')">
                 <span class="indicator-dot"></span> Disponible / Vacía
               </button>
-              <button class="btn-action servicio" (click)="cambiarEstado('servicio')">
+              <button class="btn-action servicio" [disabled]="mesaEnLimpieza" (click)="cambiarEstado('entregada')">
                 <span class="indicator-dot"></span> Servido / Pedido Completo
               </button>
-              <button class="btn-action preparacion" (click)="cambiarEstado('preparacion')">
+              <button class="btn-action preparacion" [disabled]="mesaEnLimpieza" (click)="cambiarEstado('preparando')">
                 <span class="indicator-dot"></span> Pedido en Preparación
               </button>
-              <button class="btn-action demorado" (click)="cambiarEstado('demorado')">
+              <button class="btn-action demorado" [disabled]="mesaEnLimpieza" (click)="cambiarEstado('demora')">
                 <span class="indicator-dot"></span> Demorado / Sin Entrega
               </button>
-              <button class="btn-action limpieza" (click)="cambiarEstado('limpieza')">
+              <button class="btn-action limpieza" [disabled]="mesaEnLimpieza" (click)="cambiarEstado('limpieza')">
                 <span class="indicator-dot"></span> Limpieza en Proceso
               </button>
             </div>
@@ -367,6 +372,13 @@ interface Mesa {
     /* COLORES DE ESTADO */
     .mesa-item.disponible { border-bottom: 4px solid var(--color-disponible); }
     .mesa-item.disponible .badge-status { background: #d1fae5; color: #065f46; }
+    .mesa-item.preparando { border-bottom: 4px solid var(--color-preparacion); }
+    .mesa-item.preparando .badge-status { background: #fef3c7; color: #92400e; }
+    .mesa-item.lista, .mesa-item.entregada { border-bottom: 4px solid var(--color-servicio); }
+    .mesa-item.lista .badge-status, .mesa-item.entregada .badge-status { background: #dbeafe; color: #1e40af; }
+    .mesa-item.cuenta { border-bottom: 4px solid #dc2626; background: #fef2f2; }
+    .mesa-item.cuenta .badge-status { background: #fee2e2; color: #991b1b; }
+    .mesa-item.demora { border-bottom: 4px solid var(--color-demorado); background: #fef2f2; }
 
     .mesa-item.servicio { border-bottom: 4px solid var(--color-servicio); }
     .mesa-item.servicio .badge-status { background: #dbeafe; color: #1e40af; }
@@ -402,6 +414,10 @@ interface Mesa {
 
     .status-pill { font-weight: 700; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; }
     .status-pill.disponible { background: #d1fae5; color: #065f46; }
+    .status-pill.preparando, .status-pill.lista { background: #fef3c7; color: #92400e; }
+    .status-pill.entregada { background: #dbeafe; color: #1e40af; }
+    .status-pill.cuenta { background: #fee2e2; color: #991b1b; }
+    .status-pill.demora { background: #fee2e2; color: #991b1b; }
     .status-pill.servicio { background: #dbeafe; color: #1e40af; }
     .status-pill.preparacion { background: #fef3c7; color: #92400e; }
     .status-pill.demorado { background: #fee2e2; color: #991b1b; }
@@ -417,6 +433,7 @@ interface Mesa {
     .actions-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); }
     .btn-action { border: 1px solid var(--border); background: white; padding: 10px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
     .btn-action:hover { background: #f1f5f9; }
+    .btn-action:disabled { opacity: .45; cursor: not-allowed; }
     .indicator-dot { width: 8px; height: 8px; border-radius: 50%; }
     .btn-action.disponible .indicator-dot { background: var(--color-disponible); }
     .btn-action.servicio .indicator-dot { background: var(--color-servicio); }
@@ -429,67 +446,56 @@ interface Mesa {
     .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
   `]
 })
-export class HostPage {
-  constructor(private readonly location: Location) {}
+export class HostPage implements OnInit {
+  constructor(
+    readonly realtime: RealtimeOrdersService,
+    private readonly auth: AuthService,
+    private readonly router: Router,
+  ) {}
 
-  regresar(): void {
-    this.location.back();
+  ngOnInit(): void {
+    this.realtime.conectar();
   }
 
-  mesas: Mesa[] = [
-    // Gabinetes superiores
-    { id: 1, nombre: 'Gab 1', zona: 'gabinetes', capacidad: 4, estado: 'servicio' },
-    { id: 2, nombre: 'Gab 2', zona: 'gabinetes', capacidad: 4, estado: 'disponible' },
-    { id: 3, nombre: 'Gab 3', zona: 'gabinetes', capacidad: 4, estado: 'preparacion' },
-    { id: 4, nombre: 'Gab 4', zona: 'gabinetes', capacidad: 4, estado: 'demorado', tiempoMinutos: 18 },
+  regresar(): void {
+    this.realtime.cerrarConexion();
+    this.auth.cerrarSesion();
+    void this.router.navigateByUrl('/login');
+  }
 
-    // Área Privados (Izquierda)
-    { id: 101, nombre: 'Privado 1', zona: 'privados', capacidad: 6, estado: 'servicio' },
-    { id: 102, nombre: 'Privado 2', zona: 'privados', capacidad: 6, estado: 'limpieza' },
-    { id: 103, nombre: 'Privado 3', zona: 'privados', capacidad: 6, estado: 'disponible' },
-
-    // Salón Central (Centro)
-    { id: 5, nombre: 'Mesa 1', zona: 'central', capacidad: 4, estado: 'disponible' },
-    { id: 6, nombre: 'Mesa 2', zona: 'central', capacidad: 4, estado: 'servicio' },
-    { id: 7, nombre: 'Mesa 3', zona: 'central', capacidad: 4, estado: 'disponible', sugerida: true },
-    { id: 8, nombre: 'Mesa 4', zona: 'central', capacidad: 4, estado: 'disponible' },
-    { id: 9, nombre: 'Mesa 5', zona: 'central', capacidad: 2, estado: 'limpieza' },
-    { id: 10, nombre: 'Mesa 6', zona: 'central', capacidad: 2, estado: 'disponible' },
-
-    // Barra (Derecha)
-    { id: 201, nombre: 'Barra 1', zona: 'barra', capacidad: 1, estado: 'servicio' },
-    { id: 202, nombre: 'Barra 2', zona: 'barra', capacidad: 1, estado: 'disponible' },
-    { id: 203, nombre: 'Barra 3', zona: 'barra', capacidad: 1, estado: 'preparacion' }
-  ];
-
-  mesaSeleccionada: Mesa | null = null;
+  private mesaSeleccionadaId = 7;
   estadoAnterior: { mesaId: number; estado: Mesa['estado'] } | null = null;
+
+  get mesas(): Mesa[] {
+    return this.realtime.mesas().map((mesa) => ({ ...mesa, sugerida: mesa.id === 7 }));
+  }
+
+  get mesaSeleccionada(): Mesa | null {
+    return this.mesas.find((mesa) => mesa.id === this.mesaSeleccionadaId) ?? this.mesas[0] ?? null;
+  }
+
+  get mesaEnLimpieza(): boolean {
+    return this.mesaSeleccionada?.estado === 'limpieza';
+  }
 
   getMesasPorZona(zona: Mesa['zona']): Mesa[] {
     return this.mesas.filter(m => m.zona === zona);
   }
 
   seleccionarMesa(mesa: Mesa) {
-    this.mesaSeleccionada = mesa;
+    this.mesaSeleccionadaId = mesa.id;
   }
 
   cambiarEstado(nuevoEstado: Mesa['estado']) {
-    if (this.mesaSeleccionada) {
-      this.estadoAnterior = {
-        mesaId: this.mesaSeleccionada.id,
-        estado: this.mesaSeleccionada.estado
-      };
-      this.mesaSeleccionada.estado = nuevoEstado;
-    }
+    if (!this.mesaSeleccionada || this.mesaEnLimpieza) return;
+    this.estadoAnterior = { mesaId: this.mesaSeleccionada.id, estado: this.mesaSeleccionada.estado };
+    this.realtime.marcarMesa(nuevoEstado, this.mesaSeleccionada.id);
   }
 
   deshacerAccion() {
     if (this.estadoAnterior) {
-      const mesa = this.mesas.find(m => m.id === this.estadoAnterior?.mesaId);
-      if (mesa) {
-        mesa.estado = this.estadoAnterior.estado;
-        this.estadoAnterior = null;
-      }
+      this.realtime.marcarMesa(this.estadoAnterior.estado, this.estadoAnterior.mesaId);
+      this.estadoAnterior = null;
     }
   }
 
@@ -501,18 +507,20 @@ export class HostPage {
   }
 
   getEstadoLabel(estado: Mesa['estado']): string {
-    const labels: Record<Mesa['estado'], string> = {
+    const labels: Record<TableStatus, string> = {
       disponible: 'Disponible',
-      servicio: 'En Servicio',
-      preparacion: 'Preparación',
-      demorado: 'Demorado',
-      limpieza: 'En Limpieza'
+      preparando: 'En preparación',
+      lista: 'Lista en cocina',
+      entregada: 'Entregada',
+      cuenta: 'Cuenta solicitada',
+      demora: 'Demora',
+      limpieza: 'En limpieza',
     };
     return labels[estado];
   }
 
   getZonaLabel(zona: Mesa['zona']): string {
-    const zonas: Record<Mesa['zona'], string> = {
+    const zonas: Record<TableZone, string> = {
       central: 'Salón Central',
       privados: 'Zona Privados',
       gabinetes: 'Gabinetes',

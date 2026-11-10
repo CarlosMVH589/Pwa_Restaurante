@@ -1,7 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
-import { OrderStatus, RestaurantData } from './order.model';
+import { MenuItem, OrderStatus, RestaurantData, TableStatus } from './order.model';
 
 @Injectable({ providedIn: 'root' })
 export class RealtimeOrdersService {
@@ -13,6 +13,7 @@ export class RealtimeOrdersService {
   private readonly snapshot = signal<RestaurantData | null>(null);
 
   readonly ordenes = computed(() => this.snapshot()?.ordenes ?? []);
+  readonly cuentasPendientes = computed(() => this.snapshot()?.cuentasPendientes ?? []);
   readonly mesas = computed(() => this.snapshot()?.mesas ?? []);
   readonly menuItems = computed(() => this.snapshot()?.menuItems ?? []);
   readonly conexion = signal<'conectando' | 'conectado' | 'desconectado'>('desconectado');
@@ -25,8 +26,38 @@ export class RealtimeOrdersService {
     this.enviar({ type: 'update-status', orderId, estado });
   }
 
+  marcarMesa(
+    accion: 'entrega' | 'cuenta' | 'cobro' | TableStatus,
+    mesaId: number,
+  ): void {
+    this.enviar({ type: 'update-table', accion, mesaId: String(mesaId) });
+  }
+
+  iniciarLimpieza(mesaId: number): void {
+    this.enviar({ type: 'start-cleaning', mesaId: String(mesaId) });
+  }
+
+  finalizarLimpieza(mesaId: number): void {
+    this.enviar({ type: 'finish-cleaning', mesaId: String(mesaId) });
+  }
+
+  confirmarEntregaCompleta(mesaId: number): void {
+    this.enviar({ type: 'complete-delivery', mesaId: String(mesaId) });
+  }
+
   cambiarDisponibilidad(nombre: string, disponible: boolean): void {
     this.enviar({ type: 'update-menu', nombre, disponible });
+  }
+
+  agregarOrden(item: MenuItem, mesaId: number, mesa: string, cantidad: number, detalle: string): void {
+    this.enviar({
+      type: 'add-order',
+      nombre: item.nombre,
+      mesaId: String(mesaId),
+      mesa,
+      cantidad: String(cantidad),
+      detalle,
+    });
   }
 
   conectar(): void {

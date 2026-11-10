@@ -1,13 +1,16 @@
-import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../core/auth/auth.service';
+import { RestaurantOrder, RestaurantTable } from '../../core/orders/order.model';
+import { RealtimeOrdersService } from '../../core/orders/realtime-orders.service';
 
-interface MesaCuenta {
-  id: number;
-  nombre: string;
-  comanda: number;
-  estado: string;
-  monto: number;
+interface Venta {
+  mesa: string;
+  comanda: string;
+  total: number;
+  hora: string;
 }
 
 @Component({
@@ -15,78 +18,91 @@ interface MesaCuenta {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './cajero.html',
-  styleUrls: ['./cajero.scss']
+  styleUrls: ['./cajero.scss'],
 })
-export class CajeroPage {
+export class CajeroPage implements OnInit {
+  constructor(
+    readonly realtime: RealtimeOrdersService,
+    private readonly auth: AuthService,
+    private readonly router: Router,
+  ) {}
 
-  // Cuentas pendientes
-  mesas: MesaCuenta[] = [
-    { id: 8, nombre: 'Mesa 8 - Salón Central', comanda: 1042, estado: 'Esperando Ticket de Pago', monto: 540.00 },
-    { id: 4, nombre: 'Gab 4 - Zona Gabinetes Premium', comanda: 1039, estado: 'Esperando Ticket de Pago', monto: 1280.00 }
-  ];
+  mesaSeleccionada: RestaurantTable | null = null;
+  modal: 'dividir' | 'descuento' | 'ventas' | null = null;
+  partes = 2;
+  descuento = 10;
+  ventas: Venta[] = [];
+  fondoInicial = 1500;
+  efectivoVentas = 4850;
+  efectivoCapturado = 6350;
 
-  mesaSeleccionada: MesaCuenta | null = this.mesas[0];
+  ngOnInit(): void {
+    this.realtime.conectar();
+  }
 
-  // Totales de Arqueo y Cierre
-  fondoInicial: number = 1500.00;
-  efectivoVentas: number = 4850.00;
-  tarjetaVentas: number = 3120.00;
-  efectivoCapturado: number = 6350.00;
+  get mesasConCuenta(): RestaurantTable[] {
+    return this.realtime.mesas().filter((mesa) => mesa.estado === 'cuenta');
+  }
 
-  // Propiedad calculada para el total esperado en caja (Fondo + Efectivo)
+  get ordenesMesa(): RestaurantOrder[] {
+    return this.mesaSeleccionada
+      ? [...this.realtime.cuentasPendientes(), ...this.realtime.ordenes()]
+        .filter((order) => order.mesaId === this.mesaSeleccionada?.id)
+      : [];
+  }
+
+  get subtotal(): number {
+    return this.ordenesMesa.reduce((total, order) => total + order.precio, 0);
+  }
+
+  get totalConDescuento(): number {
+    return this.subtotal * (1 - this.descuento / 100);
+  }
+
   get totalEsperado(): number {
     return this.fondoInicial + this.efectivoVentas;
   }
 
-  // Propiedad calculada para determinar la diferencia en tiempo real
   get diferencia(): number {
     return this.efectivoCapturado - this.totalEsperado;
   }
 
-  seleccionarMesa(mesa: MesaCuenta): void {
+  totalOrdenes(total: number, order: RestaurantOrder): number {
+    return total + order.precio;
+  }
+
+  seleccionarMesa(mesa: RestaurantTable): void {
     this.mesaSeleccionada = mesa;
   }
 
-  calcularDiferencia(): void {
-    // Se ejecuta al modificar manualmente el input de Efectivo Físico
+  abrirModal(modal: 'dividir' | 'descuento' | 'ventas'): void {
+    if (modal !== 'ventas' && !this.mesaSeleccionada) return;
+    this.modal = modal;
   }
 
-  // Método principal que suma las ventas
-  procesarPago(metodo: 'Efectivo' | 'Tarjeta'): void {
-    if (!this.mesaSeleccionada) {
-      alert('Por favor selecciona una mesa para cobrar.');
-      return;
-    }
-
-    const montoCobrado = this.mesaSeleccionada.monto;
-
-    if (metodo === 'Efectivo') {
-      // Incrementa ventas en efectivo y ajusta el efectivo contado por defecto
-      this.efectivoVentas += montoCobrado;
-      this.efectivoCapturado += montoCobrado;
-    } else if (metodo === 'Tarjeta') {
-      // Incrementa únicamente ventas con tarjeta
-      this.tarjetaVentas += montoCobrado;
-    }
-
-    alert(`¡Cobro exitoso con ${metodo}!\nMesa: ${this.mesaSeleccionada.nombre}\nMonto cobrado: $${montoCobrado.toFixed(2)} MXN`);
-
-    // Remover la mesa cobrada y seleccionar la siguiente si existe
-    this.mesas = this.mesas.filter(m => m.id !== this.mesaSeleccionada?.id);
-    this.mesaSeleccionada = this.mesas.length > 0 ? this.mesas[0] : null;
+  cerrarModal(): void {
+    this.modal = null;
   }
 
-  dividirCuenta(): void {
-    if (!this.mesaSeleccionada) return;
-    alert(`Procesando división de cuenta para ${this.mesaSeleccionada.nombre}`);
+  procesarPago(): void {
+    if (!this.mesaSeleccionada || !this.ordenesMesa.length) return;
+    const total = this.totalConDescuento;
+    this.ventas.push({
+      mesa: this.mesaSeleccionada.nombre,
+      comanda: this.ordenesMesa[0].comanda,
+      total,
+      hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+    });
+    this.efectivoVentas += total;
+    this.efectivoCapturado += total;
+    this.realtime.marcarMesa('cobro', this.mesaSeleccionada.id);
+    this.mesaSeleccionada = null;
+    this.modal = null;
   }
 
-  aplicarDescuento(): void {
-    if (!this.mesaSeleccionada) return;
-    alert(`Aplicando descuento a ${this.mesaSeleccionada.nombre}`);
-  }
-
-  imprimirTicket(): void {
-    alert('Imprimiendo ticket de ventas para el relevo de turno...');
+  cerrarSesion(): void {
+    this.realtime.cerrarConexion();
+    this.auth.cerrarSesion();
+    void this.router.navigateByUrl('/login');
   }
 }

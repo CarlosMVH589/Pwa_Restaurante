@@ -9,13 +9,13 @@
     "zonaHoraria": "America/Mexico_City"
   },
   "menuItems": [
-    { "nombre": "Taco de barbacoa", "precio": 48, "disponible": true },
-    { "nombre": "Sopa azteca", "precio": 95, "disponible": true },
-    { "nombre": "Ensalada de nopales", "precio": 110, "disponible": false },
-    { "nombre": "Hamburguesa BBQ", "precio": 165, "disponible": true },
-    { "nombre": "Papas a la francesa", "precio": 65, "disponible": true },
-    { "nombre": "Flan de la casa", "precio": 72, "disponible": false },
-    { "nombre": "Agua de jamaica", "precio": 38, "disponible": true }
+    { "nombre": "Taco de barbacoa", "precio": 48, "disponible": true, "categoria": "platillo" },
+    { "nombre": "Sopa azteca", "precio": 95, "disponible": true, "categoria": "platillo" },
+    { "nombre": "Ensalada de nopales", "precio": 110, "disponible": false, "categoria": "platillo" },
+    { "nombre": "Hamburguesa BBQ", "precio": 165, "disponible": true, "categoria": "platillo" },
+    { "nombre": "Papas a la francesa", "precio": 65, "disponible": true, "categoria": "platillo" },
+    { "nombre": "Flan de la casa", "precio": 72, "disponible": false, "categoria": "platillo" },
+    { "nombre": "Agua de jamaica", "precio": 38, "disponible": true, "categoria": "bebida" }
   ],
   "mesas": [
     { "id": 1, "nombre": "Gab 1", "zona": "gabinetes", "estado": "entregada", "capacidad": 4, "progreso": 100 },

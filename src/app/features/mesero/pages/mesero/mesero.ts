@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { OrderStatus, RestaurantTable, TableStatus, TableZone } from '../../../../core/orders/order.model';
+import { MenuItem, OrderStatus, RestaurantTable, TableStatus, TableZone } from '../../../../core/orders/order.model';
 import { RealtimeOrdersService } from '../../../../core/orders/realtime-orders.service';
 
 type AccionCritica = 'entrega' | 'cuenta';
@@ -13,14 +14,22 @@ interface Platillo {
   estado: 'listo' | 'preparando' | 'pendiente' | 'entregado';
 }
 
+interface PedidoExtra {
+  item: MenuItem;
+  cantidad: number;
+  detalle: string;
+}
+
 @Component({
   selector: 'app-mesero',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './mesero.html',
   styleUrl: './mesero.scss',
 })
-export class MeseroPage implements OnInit {
+export class MeseroPage implements OnInit, OnDestroy {
+  private limpiezaTimer?: ReturnType<typeof setInterval>;
+  private readonly limpiezaTick = signal(0);
   constructor(
     readonly realtime: RealtimeOrdersService,
     private readonly auth: AuthService,
@@ -29,6 +38,11 @@ export class MeseroPage implements OnInit {
 
   ngOnInit(): void {
     this.realtime.conectar();
+    this.limpiezaTimer = setInterval(() => this.limpiezaTick.update((value) => value + 1), 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.limpiezaTimer) clearInterval(this.limpiezaTimer);
   }
 
   regresar(): void {
@@ -40,6 +54,12 @@ export class MeseroPage implements OnInit {
   private mesaSeleccionadaId = 7;
   accionPendiente: AccionCritica | null = null;
   aviso = '';
+  pedidoExtraAbierto = false;
+  categoriaExtra: MenuItem['categoria'] = 'platillo';
+  itemExtraSeleccionado: MenuItem | null = null;
+  cantidadExtra = 1;
+  detalleExtra = '';
+  pedidoExtra: PedidoExtra[] = [];
 
   get mesas(): RestaurantTable[] {
     return this.realtime.mesas();
@@ -54,6 +74,21 @@ export class MeseroPage implements OnInit {
       capacidad: 0,
       progreso: 0,
     };
+  }
+
+  get mesaEnLimpieza(): boolean {
+    return this.mesaSeleccionada.estado === 'limpieza';
+  }
+
+  get limpiezaIniciada(): boolean {
+    return Boolean(this.mesaSeleccionada.limpiezaInicio);
+  }
+
+  get limpiezaTranscurrida(): string {
+    this.limpiezaTick();
+    if (!this.mesaSeleccionada.limpiezaInicio) return '00:00';
+    const segundos = Math.max(0, Math.floor((Date.now() - Date.parse(this.mesaSeleccionada.limpiezaInicio)) / 1000));
+    return `${String(Math.floor(segundos / 60)).padStart(2, '0')}:${String(segundos % 60).padStart(2, '0')}`;
   }
 
   get platillos(): Platillo[] {
@@ -74,6 +109,10 @@ export class MeseroPage implements OnInit {
     return this.mesas.filter((mesa) => mesa.estado === 'demora').length;
   }
 
+  get menuDisponible(): MenuItem[] {
+    return this.realtime.menuItems().filter((item) => item.disponible && item.categoria === this.categoriaExtra);
+  }
+
   getMesasPorZona(zona: TableZone): RestaurantTable[] {
     return this.mesas.filter((mesa) => mesa.zona === zona);
   }
@@ -88,6 +127,7 @@ export class MeseroPage implements OnInit {
   }
 
   solicitarConfirmacion(accion: AccionCritica): void {
+    if (this.mesaEnLimpieza) return;
     this.accionPendiente = accion;
   }
 
@@ -109,17 +149,101 @@ export class MeseroPage implements OnInit {
       if (!readyOrders.length) {
         this.aviso = 'No hay platillos listos para entregar en esta mesa.';
       } else {
-        readyOrders.forEach((orden) => this.realtime.cambiarEstadoOrden(orden.id, 'entregado'));
+        this.realtime.confirmarEntregaCompleta(this.mesaSeleccionadaId);
         this.aviso = `Entrega registrada para ${this.mesaSeleccionada.nombre}.`;
       }
     } else if (this.accionPendiente === 'cuenta') {
+      if (this.realtime.conexion() !== 'conectado') {
+        this.aviso = 'No hay conexión. No se pudo solicitar la cuenta.';
+        this.accionPendiente = null;
+        return;
+      }
+      this.realtime.marcarMesa('cuenta', this.mesaSeleccionadaId);
       this.aviso = `Cuenta solicitada para mesa ${this.mesaSeleccionada.id}.`;
     }
     this.accionPendiente = null;
   }
 
   agregarPedido(): void {
-    this.aviso = `Nuevo pedido agregado a mesa ${this.mesaSeleccionada.id}.`;
+    if (this.mesaEnLimpieza) return;
+    this.pedidoExtraAbierto = true;
+    this.aviso = '';
+    this.seleccionarCategoriaExtra('platillo');
+  }
+
+  cerrarPedidoExtra(): void {
+    this.pedidoExtraAbierto = false;
+    this.itemExtraSeleccionado = null;
+    this.cantidadExtra = 1;
+    this.detalleExtra = '';
+    this.pedidoExtra = [];
+  }
+
+  seleccionarCategoriaExtra(categoria: MenuItem['categoria']): void {
+    this.categoriaExtra = categoria;
+    this.itemExtraSeleccionado = null;
+    this.cantidadExtra = 1;
+    this.detalleExtra = '';
+  }
+
+  seleccionarItemExtra(item: MenuItem): void {
+    this.itemExtraSeleccionado = item;
+    this.cantidadExtra = 1;
+    this.detalleExtra = '';
+  }
+
+  agregarLineaExtra(): void {
+    if (!this.itemExtraSeleccionado || this.cantidadExtra < 1 || this.cantidadExtra > 20) return;
+    const existente = this.pedidoExtra.find((linea) => linea.item.nombre === this.itemExtraSeleccionado?.nombre && linea.detalle === this.detalleExtra.trim());
+    if (existente) {
+      existente.cantidad += this.cantidadExtra;
+    } else {
+      this.pedidoExtra.push({
+        item: this.itemExtraSeleccionado,
+        cantidad: this.cantidadExtra,
+        detalle: this.detalleExtra.trim(),
+      });
+    }
+    this.itemExtraSeleccionado = null;
+    this.cantidadExtra = 1;
+    this.detalleExtra = '';
+  }
+
+  quitarLineaExtra(linea: PedidoExtra): void {
+    const index = this.pedidoExtra.indexOf(linea);
+    if (index >= 0) this.pedidoExtra.splice(index, 1);
+  }
+
+  enviarPedidoExtra(): void {
+    if (!this.pedidoExtra.length || this.mesaEnLimpieza) return;
+    if (this.realtime.conexion() !== 'conectado') {
+      this.aviso = 'No hay conexión con cocina. Intenta de nuevo cuando se restablezca.';
+      return;
+    }
+
+    this.pedidoExtra.forEach((linea) => this.realtime.agregarOrden(
+      linea.item,
+      this.mesaSeleccionada.id,
+      this.mesaSeleccionada.nombre,
+      linea.cantidad,
+      linea.detalle,
+    ));
+    this.aviso = `Pedido extra enviado a cocina para ${this.mesaSeleccionada.nombre}.`;
+    this.cerrarPedidoExtra();
+  }
+
+  iniciarLimpieza(): void {
+    if (!this.mesaEnLimpieza || this.limpiezaIniciada) return;
+    this.realtime.iniciarLimpieza(this.mesaSeleccionada.id);
+  }
+
+  finalizarLimpieza(): void {
+    if (!this.mesaEnLimpieza || !this.limpiezaIniciada) return;
+    this.realtime.finalizarLimpieza(this.mesaSeleccionada.id);
+  }
+
+  totalPedidoExtra(total: number, linea: PedidoExtra): number {
+    return total + linea.item.precio * linea.cantidad;
   }
 
   etiquetaEstado(estado: TableStatus): string {
@@ -130,6 +254,7 @@ export class MeseroPage implements OnInit {
       entregada: 'Entregada',
       demora: 'Demora',
       limpieza: 'Limpieza',
+      cuenta: 'Cuenta solicitada',
     }[estado];
   }
 

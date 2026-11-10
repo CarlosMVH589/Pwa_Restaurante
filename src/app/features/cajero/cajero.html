@@ -1,100 +1,49 @@
-<!-- BANNER SUPERIOR -->
 <header class="header-cajero">
   <h1 class="title">SISTEMA DE GESTIÓN OPERATIVA - MÓDULO DE CAJERO</h1>
-  <div class="user-info">
-    <span>Usuario: Sofía López (Cajero) | Caja Abierta: CAJA 01</span>
-  </div>
+  <div class="user-info"><span>Usuario: Sofía López (Cajero) | Caja Abierta: CAJA 01</span><button type="button" class="logout" (click)="cerrarSesion()">CERRAR SESIÓN</button></div>
 </header>
 
-<!-- CONTENEDOR PRINCIPAL -->
 <div class="main-container">
-  
-  <!-- COLUMNA IZQUIERDA: MESAS CON CUENTA SOLICITADA -->
   <section class="col-left">
-    <h2 class="section-title">MESAS CON CUENTA SOLICITADA (Rojo)</h2>
-
-    <div 
-      *ngFor="let mesa of mesas" 
-      class="card-mesa" 
-      [class.selected]="mesaSeleccionada?.id === mesa.id"
-      (click)="seleccionarMesa(mesa)">
+    <h2 class="section-title">MESAS CON CUENTA SOLICITADA</h2>
+    <p class="connection" [class.online]="realtime.conexion() === 'conectado'">{{ realtime.conexion() === 'conectado' ? 'Actualizado en tiempo real' : 'Sin conexión' }}</p>
+    <div *ngIf="!mesasConCuenta.length" class="empty-state">No hay cuentas solicitadas.</div>
+    <div *ngFor="let mesa of mesasConCuenta" class="card-mesa" [class.selected]="mesaSeleccionada?.id === mesa.id" (click)="seleccionarMesa(mesa)">
       <div class="color-indicator red"></div>
-      <div class="mesa-info">
-        <h3>{{ mesa.nombre }}</h3>
-        <p class="subtext">Comanda #{{ mesa.comanda }}</p>
-        <p class="subtext">Estado: {{ mesa.estado }}</p>
-      </div>
-      <div class="mesa-monto">
-        <span class="amount">${{ mesa.monto | number:'1.2-2' }} MXN</span>
-        <span *ngIf="mesaSeleccionada?.id === mesa.id" class="badge-selected">SELECCIONADA</span>
-      </div>
+      <div class="mesa-info"><h3>{{ mesa.nombre }}</h3><p class="subtext">Cuenta solicitada</p><p class="subtext">{{ realtime.ordenes().filter(o => o.mesaId === mesa.id)[0]?.comanda || 'Sin comanda' }}</p></div>
+      <div class="mesa-monto"><span class="amount">${{ realtime.ordenes().filter(o => o.mesaId === mesa.id).reduce(totalOrdenes, 0) | number:'1.2-2' }} MXN</span></div>
     </div>
-
-    <!-- Acciones Financieras -->
     <div class="financial-actions">
-      <p class="actions-label">Acciones Financieras para la Cuenta:</p>
+      <p class="actions-label">Acciones financieras</p>
       <div class="actions-grid">
-        <button type="button" class="btn btn-outline" (click)="dividirCuenta()">Dividir Cuenta</button>
-        <button type="button" class="btn btn-outline" (click)="aplicarDescuento()">Aplicar Descuento</button>
-        <button type="button" class="btn btn-green" (click)="procesarPago('Efectivo')">Cobrar Efectivo</button>
-        <button type="button" class="btn btn-blue" (click)="procesarPago('Tarjeta')">Cobrar Tarjeta</button>
+        <button type="button" class="btn btn-outline" [disabled]="!mesaSeleccionada" (click)="abrirModal('dividir')">DIVIDIR CUENTA</button>
+        <button type="button" class="btn btn-outline" [disabled]="!mesaSeleccionada" (click)="abrirModal('descuento')">APLICAR DESCUENTO</button>
+        <button type="button" class="btn btn-green" [disabled]="!mesaSeleccionada" (click)="procesarPago()">COBRAR EFECTIVO</button>
       </div>
     </div>
   </section>
 
-  <!-- COLUMNA DERECHA: CORTE DE CAJA -->
   <section class="col-right">
-    <h2 class="section-title">DETALLE DE COBRO & CONTROL DE CORTE DE CAJA</h2>
-
+    <h2 class="section-title">DETALLE DE COBRO Y CORTE DE CAJA</h2>
     <div class="panel-corte">
       <h3 class="panel-subtitle">CIERRE DE RELEVO Y ARQUEO FÍSICO</h3>
-
-      <div class="data-row">
-        <span>Fondo Inicial de Caja (Apertura):</span>
-        <strong>${{ fondoInicial | number:'1.2-2' }} MXN</strong>
-      </div>
-      <div class="data-row">
-        <span>Efectivo Registrado (Ventas):</span>
-        <strong>${{ efectivoVentas | number:'1.2-2' }} MXN</strong>
-      </div>
-      <div class="data-row">
-        <span>Tarjeta Registrado (Ventas):</span>
-        <strong>${{ tarjetaVentas | number:'1.2-2' }} MXN</strong>
-      </div>
-      <div class="data-row highlight">
-        <span>Total Esperado en Caja (Efectivo):</span>
-        <strong>${{ totalEsperado | number:'1.2-2' }} MXN</strong>
-      </div>
-
-      <!-- Captura Manual de Efectivo Físico -->
-      <div class="input-box">
-        <span class="input-label">Efectivo Físico Contado (Captura Manual):</span>
-        <input 
-          type="number" 
-          [(ngModel)]="efectivoCapturado" 
-          (input)="calcularDiferencia()" 
-          class="input-value-field" 
-        />
-      </div>
-
-      <!-- Alerta Diferencia de Caja -->
-      <div class="alert-box" [class.green]="diferencia === 0" [class.red]="diferencia !== 0">
-        <strong>DIFERENCIA DE CAJA: ${{ diferencia | number:'1.2-2' }} MXN</strong>
-        <p *ngIf="diferencia === 0">✓ Arqueo cuadrado correctamente por Sofía López.</p>
-        <p *ngIf="diferencia !== 0">⚠️ Se detectó una diferencia en la caja.</p>
-      </div>
-
-      <!-- Proceso Obligatorio de Relevo -->
-      <div class="relevo-box">
-        <h4 class="relevo-title">PROCESO OBLIGATORIO DE RELEVO DE TURNO:</h4>
-        <p class="relevo-text">
-          Deberá imprimir de manera obligatoria el ticket de ventas del empleado en turno antes de que el gerente realice el arqueo.
-        </p>
-        <button type="button" class="btn btn-red-action" (click)="imprimirTicket()">
-          [!] IMPRIMIR TICKET DE VENTAS (RELEVO)
-        </button>
-      </div>
+      <div class="data-row"><span>Fondo inicial:</span><strong>${{ fondoInicial | number:'1.2-2' }} MXN</strong></div>
+      <div class="data-row"><span>Efectivo registrado:</span><strong>${{ efectivoVentas | number:'1.2-2' }} MXN</strong></div>
+      <div class="data-row highlight"><span>Total esperado:</span><strong>${{ totalEsperado | number:'1.2-2' }} MXN</strong></div>
+      <div class="input-box"><span class="input-label">Efectivo físico contado:</span><input type="number" [(ngModel)]="efectivoCapturado" class="input-value-field"></div>
+      <div class="alert-box" [class.green]="diferencia === 0" [class.red]="diferencia !== 0"><strong>DIFERENCIA: ${{ diferencia | number:'1.2-2' }} MXN</strong></div>
+      <button type="button" class="btn btn-red-action" (click)="abrirModal('ventas')">VER TICKET DE VENTAS DEL TURNO</button>
     </div>
   </section>
+</div>
 
+<div *ngIf="modal" class="cash-modal-backdrop" (click)="cerrarModal()">
+  <section class="cash-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" aria-label="Cerrar" (click)="cerrarModal()">×</button>
+    <ng-container [ngSwitch]="modal">
+      <ng-container *ngSwitchCase="'dividir'"><h2>Dividir cuenta</h2><p>{{ mesaSeleccionada?.nombre }}</p><label>¿Entre cuántas personas?</label><input type="number" min="2" [(ngModel)]="partes"><div class="modal-total">Cada persona: <strong>${{ (totalConDescuento / partes) | number:'1.2-2' }} MXN</strong></div></ng-container>
+      <ng-container *ngSwitchCase="'descuento'"><h2>Aplicar descuento</h2><p>Cuenta de {{ mesaSeleccionada?.nombre }}</p><label>Descuento (%)</label><input type="number" min="0" max="100" [(ngModel)]="descuento"><div class="modal-total">Total actualizado: <strong>${{ totalConDescuento | number:'1.2-2' }} MXN</strong></div></ng-container>
+      <ng-container *ngSwitchCase="'ventas'"><h2>Ventas del turno</h2><p *ngIf="!ventas.length" class="empty-state">Aún no hay cobros registrados.</p><div *ngFor="let venta of ventas" class="sale-row"><span>{{ venta.mesa }} · {{ venta.comanda }}<small>{{ venta.hora }}</small></span><strong>${{ venta.total | number:'1.2-2' }} MXN</strong></div><button type="button" class="print-button">IMPRIMIR</button></ng-container>
+    </ng-container>
+  </section>
 </div>

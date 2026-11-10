@@ -1,5 +1,5 @@
 export type OrderStatus = 'pendiente' | 'preparacion' | 'listo' | 'entregado';
-export type TableStatus = 'disponible' | 'preparando' | 'lista' | 'entregada' | 'demora' | 'limpieza';
+export type TableStatus = 'disponible' | 'preparando' | 'lista' | 'entregada' | 'cuenta' | 'demora' | 'limpieza';
 export type TableZone = 'central' | 'privados' | 'gabinetes' | 'barra';
 
 export interface RestaurantOrder {
@@ -23,12 +23,14 @@ export interface RestaurantTable {
   capacidad: number;
   progreso: number;
   nota?: string;
+  limpiezaInicio?: string;
 }
 
 export interface MenuItem {
   nombre: string;
   precio: number;
   disponible: boolean;
+  categoria: 'platillo' | 'bebida';
 }
 
 export interface RestaurantData {
@@ -44,4 +46,5 @@ export interface RestaurantData {
   menuItems: MenuItem[];
   mesas: RestaurantTable[];
   ordenes: RestaurantOrder[];
+  cuentasPendientes: RestaurantOrder[];
 }
