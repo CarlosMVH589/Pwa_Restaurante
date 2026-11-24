@@ -29,8 +29,9 @@ export class CajeroPage implements OnInit {
 
   mesaSeleccionada: RestaurantTable | null = null;
   modal: 'dividir' | 'descuento' | 'ventas' | null = null;
+  desgloseAbierto: number | null = null;
   partes = 2;
-  descuento = 10;
+  descuento = 0;
   ventas: Venta[] = [];
   fondoInicial = 1500;
   efectivoVentas = 4850;
@@ -45,10 +46,46 @@ export class CajeroPage implements OnInit {
   }
 
   get ordenesMesa(): RestaurantOrder[] {
-    return this.mesaSeleccionada
-      ? [...this.realtime.cuentasPendientes(), ...this.realtime.ordenes()]
-        .filter((order) => order.mesaId === this.mesaSeleccionada?.id)
-      : [];
+    return this.mesaSeleccionada ? this.ordenesDe(this.mesaSeleccionada) : [];
+  }
+
+  private ordenesDe(mesa: RestaurantTable): RestaurantOrder[] {
+    return [...this.realtime.cuentasPendientes(), ...this.realtime.ordenes()]
+      .filter((order) => order.mesaId === mesa.id);
+  }
+
+  lineasDe(mesa: RestaurantTable): RestaurantOrder[] {
+    return this.ordenesDe(mesa);
+  }
+
+  articulosDe(mesa: RestaurantTable): number {
+    return this.ordenesDe(mesa).reduce((total, order) => total + order.cantidad, 0);
+  }
+
+  descuentoPct(mesa: RestaurantTable): number {
+    return this.mesaSeleccionada?.id === mesa.id ? this.descuento : 0;
+  }
+
+  descuentoMontoDe(mesa: RestaurantTable): number {
+    return this.montoDe(mesa) * this.descuentoPct(mesa) / 100;
+  }
+
+  totalDe(mesa: RestaurantTable): number {
+    return this.montoDe(mesa) - this.descuentoMontoDe(mesa);
+  }
+
+  alternarDesglose(mesa: RestaurantTable, event: Event): void {
+    event.stopPropagation();
+    this.mesaSeleccionada = mesa;
+    this.desgloseAbierto = this.desgloseAbierto === mesa.id ? null : mesa.id;
+  }
+
+  comandaDe(mesa: RestaurantTable): string {
+    return this.ordenesDe(mesa)[0]?.comanda ?? '';
+  }
+
+  montoDe(mesa: RestaurantTable): number {
+    return this.ordenesDe(mesa).reduce((total, order) => total + order.precio, 0);
   }
 
   get subtotal(): number {
@@ -95,7 +132,8 @@ export class CajeroPage implements OnInit {
     });
     this.efectivoVentas += total;
     this.efectivoCapturado += total;
-    this.realtime.marcarMesa('cobro', this.mesaSeleccionada.id);
+    this.realtime.marcarMesa('cobro', this.mesaSeleccionada.id, this.descuento);
+    this.descuento = 0;
     this.mesaSeleccionada = null;
     this.modal = null;
   }

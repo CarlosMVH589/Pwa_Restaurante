@@ -8,11 +8,29 @@
     <h2 class="section-title">MESAS CON CUENTA SOLICITADA</h2>
     <p class="connection" [class.online]="realtime.conexion() === 'conectado'">{{ realtime.conexion() === 'conectado' ? 'Actualizado en tiempo real' : 'Sin conexión' }}</p>
     <div *ngIf="!mesasConCuenta.length" class="empty-state">No hay cuentas solicitadas.</div>
-    <div *ngFor="let mesa of mesasConCuenta" class="card-mesa" [class.selected]="mesaSeleccionada?.id === mesa.id" (click)="seleccionarMesa(mesa)">
-      <div class="color-indicator red"></div>
-      <div class="mesa-info"><h3>{{ mesa.nombre }}</h3><p class="subtext">Cuenta solicitada</p><p class="subtext">{{ realtime.ordenes().filter(o => o.mesaId === mesa.id)[0]?.comanda || 'Sin comanda' }}</p></div>
-      <div class="mesa-monto"><span class="amount">${{ realtime.ordenes().filter(o => o.mesaId === mesa.id).reduce(totalOrdenes, 0) | number:'1.2-2' }} MXN</span></div>
-    </div>
+    <ng-container *ngFor="let mesa of mesasConCuenta">
+      <div class="card-mesa" [class.selected]="mesaSeleccionada?.id === mesa.id" (click)="seleccionarMesa(mesa)">
+        <div class="color-indicator red"></div>
+        <div class="mesa-info">
+          <h3>{{ mesa.nombre }}</h3>
+          <p class="subtext">Cuenta solicitada · {{ articulosDe(mesa) }} {{ articulosDe(mesa) === 1 ? 'artículo' : 'artículos' }}</p>
+          <p class="subtext">{{ comandaDe(mesa) || 'Sin comanda' }}</p>
+          <button type="button" class="btn-desglose" (click)="alternarDesglose(mesa, $event)">{{ desgloseAbierto === mesa.id ? 'OCULTAR DESGLOSE' : 'VER DESGLOSE' }}</button>
+        </div>
+        <div class="mesa-monto"><span class="amount">${{ totalDe(mesa) | number:'1.2-2' }} MXN</span></div>
+      </div>
+      <div *ngIf="desgloseAbierto === mesa.id" class="desglose" aria-label="Desglose de la cuenta">
+        <div class="desglose-head"><span>Artículo</span><span>P. unitario</span><span>Importe</span></div>
+        <div *ngFor="let linea of lineasDe(mesa)" class="desglose-row">
+          <span>{{ linea.cantidad }} × {{ linea.platillo }}<small>{{ linea.detalle }}</small></span>
+          <span>${{ linea.precio / linea.cantidad | number:'1.2-2' }}</span>
+          <strong>${{ linea.precio | number:'1.2-2' }}</strong>
+        </div>
+        <div class="desglose-sum"><span>Subtotal</span><span>${{ montoDe(mesa) | number:'1.2-2' }}</span></div>
+        <div *ngIf="descuentoPct(mesa) > 0" class="desglose-sum"><span>Descuento ({{ descuentoPct(mesa) }}%)</span><span>-${{ descuentoMontoDe(mesa) | number:'1.2-2' }}</span></div>
+        <div class="desglose-sum total"><span>Total a cobrar</span><strong>${{ totalDe(mesa) | number:'1.2-2' }} MXN</strong></div>
+      </div>
+    </ng-container>
     <div class="financial-actions">
       <p class="actions-label">Acciones financieras</p>
       <div class="actions-grid">

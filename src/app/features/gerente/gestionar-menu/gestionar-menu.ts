@@ -1,22 +1,25 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-
-interface Platillo {
-  id: number;
-  nombre: string;
-  categoria: string;
-  precio: number;
-  estado: 'Disponible' | 'Agotado';
-  pausado: boolean;
-}
+import { AuthService } from '../../../core/auth/auth.service';
+import {
+  IngredienteStock,
+  PlatilloMenu,
+  RestaurantApiService,
+  mensajeError,
+} from '../../../core/orders/restaurant-api.service';
 
 interface Categoria {
   nombre: string;
   count: number;
 }
-//comentario
+
+interface LineaFormulario {
+  ingredienteId: number | null;
+  cantidad: number;
+}
+
 @Component({
   selector: 'app-gestionar-menu',
   standalone: true,
@@ -24,96 +27,153 @@ interface Categoria {
   templateUrl: './gestionar-menu.html',
   styleUrl: './gestionar-menu.scss'
 })
-export class GestionarMenuComponent {
-  constructor(private readonly router: Router) {}
+export class GestionarMenuComponent implements OnInit {
+  constructor(
+    private readonly router: Router,
+    private readonly api: RestaurantApiService,
+    private readonly auth: AuthService,
+    private readonly cdr: ChangeDetectorRef,
+  ) {}
 
-  searchTerm: string = '';
-  selectedCategoriaFilter: string = '';
-  activeSidebarCategory: string = 'Hamburguesas & Snacking';
+  readonly secciones = ['Hamburguesas & Snacking', 'Sopas & Entradas', 'Platillos Fuertes', 'Bebidas', 'Postres'];
+
+  searchTerm = '';
+  selectedCategoriaFilter = '';
   mostrarFormulario = false;
-  nuevoPlatillo = {
-    nombre: '',
-    categoria: 'Hamburguesas & Snacking',
-    precio: 0
-  };
+  editandoId: number | null = null;
+  guardando = false;
+  error = '';
+  aviso = '';
+  platillos: PlatilloMenu[] = [];
+  ingredientes: IngredienteStock[] = [];
+  formulario = this.formularioVacio();
 
-  categorias: Categoria[] = [
-    { nombre: 'Hamburguesas & Snacking', count: 12 },
-    { nombre: 'Sopas & Entradas', count: 5 },
-    { nombre: 'Bebidas', count: 8 },
-    { nombre: 'Postres', count: 6 }
-  ];
-
-  platillos: Platillo[] = [
-    { id: 1, nombre: 'Hamburguesa BBQ Extra', categoria: 'Hamburguesas & Snacking', precio: 120.00, estado: 'Disponible', pausado: false },
-    { id: 2, nombre: 'Sopa Azteca Tradicional', categoria: 'Sopas & Entradas', precio: 80.00, estado: 'Disponible', pausado: false },
-    { id: 3, nombre: 'Carne de Res Preparada', categoria: 'Platillos Fuertes', precio: 150.00, estado: 'Agotado', pausado: false }
-  ];
-
-  selectCategory(catName: string) {
-    this.activeSidebarCategory = catName;
+  ngOnInit(): void {
+    void this.cargar();
   }
 
-  get filteredPlatillos(): Platillo[] {
-    return this.platillos.filter(platillo => {
+  async cargar(): Promise<void> {
+    if (!this.auth.isBrowser) return;
+    try {
+      const [menu, ingredientes] = await Promise.all([this.api.menuAdmin(), this.api.ingredientes()]);
+      this.platillos = menu;
+      this.ingredientes = ingredientes;
+    } catch (error) {
+      this.error = mensajeError(error);
+    }
+    this.cdr.markForCheck();
+  }
+
+  get categorias(): Categoria[] {
+    return this.secciones.map((nombre) => ({
+      nombre,
+      count: this.platillos.filter((platillo) => platillo.seccion === nombre).length,
+    }));
+  }
+
+  get activeSidebarCategory(): string {
+    return this.selectedCategoriaFilter;
+  }
+
+  selectCategory(catName: string): void {
+    this.selectedCategoriaFilter = this.selectedCategoriaFilter === catName ? '' : catName;
+  }
+
+  get filteredPlatillos(): PlatilloMenu[] {
+    return this.platillos.filter((platillo) => {
       const matchesSearch = platillo.nombre.toLowerCase().includes(this.searchTerm.toLowerCase());
-      const matchesCategory = this.selectedCategoriaFilter 
-        ? platillo.categoria === this.selectedCategoriaFilter 
-        : true;
+      const matchesCategory = this.selectedCategoriaFilter ? platillo.seccion === this.selectedCategoriaFilter : true;
       return matchesSearch && matchesCategory;
     });
   }
 
-  mostrarFormularioAgregar() {
+  resumenReceta(platillo: PlatilloMenu): string {
+    if (!platillo.receta.length) return 'Sin receta: no descuenta inventario';
+    return platillo.receta.map((linea) => `${linea.nombre} x${linea.cantidad}`).join(', ');
+  }
+
+  unidadDe(ingredienteId: number | null): string {
+    return this.ingredientes.find((ingrediente) => ingrediente.id === ingredienteId)?.unidad ?? '';
+  }
+
+  mostrarFormularioAgregar(): void {
+    this.editandoId = null;
+    this.formulario = this.formularioVacio();
+    this.error = '';
+    this.aviso = '';
     this.mostrarFormulario = true;
   }
 
-  agregarPlatillo() {
-    const nombre = this.nuevoPlatillo.nombre.trim();
+  editarPlatillo(platillo: PlatilloMenu): void {
+    this.editandoId = platillo.id;
+    this.formulario = {
+      nombre: platillo.nombre,
+      seccion: platillo.seccion,
+      precio: platillo.precio,
+      receta: platillo.receta.map((linea) => ({ ingredienteId: linea.ingredienteId, cantidad: linea.cantidad })),
+    };
+    this.error = '';
+    this.aviso = '';
+    this.mostrarFormulario = true;
+  }
 
-    if (!nombre || this.nuevoPlatillo.precio <= 0) {
+  agregarLineaReceta(): void {
+    this.formulario.receta.push({ ingredienteId: null, cantidad: 1 });
+  }
+
+  quitarLineaReceta(indice: number): void {
+    this.formulario.receta.splice(indice, 1);
+  }
+
+  async guardarPlatillo(): Promise<void> {
+    const nombre = this.formulario.nombre.trim();
+    if (!nombre || !(this.formulario.precio > 0)) {
+      this.error = 'Escribe el nombre y un precio mayor a 0.';
       return;
     }
 
-    this.platillos.push({
-      id: Math.max(...this.platillos.map(platillo => platillo.id), 0) + 1,
-      nombre,
-      categoria: this.nuevoPlatillo.categoria,
-      precio: this.nuevoPlatillo.precio,
-      estado: 'Disponible',
-      pausado: false
-    });
+    const receta = this.formulario.receta
+      .filter((linea) => linea.ingredienteId !== null && linea.cantidad > 0)
+      .map((linea) => ({ ingredienteId: linea.ingredienteId as number, cantidad: Number(linea.cantidad) }));
+    const entrada = { nombre, precio: Number(this.formulario.precio), seccion: this.formulario.seccion, receta };
 
-    const categoria = this.categorias.find(item => item.nombre === this.nuevoPlatillo.categoria);
-    if (categoria) {
-      categoria.count += 1;
+    this.guardando = true;
+    this.error = '';
+    try {
+      if (this.editandoId === null) await this.api.crearPlatillo(entrada);
+      else await this.api.actualizarPlatillo(this.editandoId, entrada);
+      this.aviso = this.editandoId === null ? `"${nombre}" se agregó al menú.` : `"${nombre}" se actualizó.`;
+      await this.cargar();
+      this.cancelarAgregar();
+    } catch (error) {
+      this.error = mensajeError(error);
     }
-
-    this.cancelarAgregar();
+    this.guardando = false;
+    this.cdr.markForCheck();
   }
 
-  cancelarAgregar() {
+  cancelarAgregar(): void {
     this.mostrarFormulario = false;
-    this.nuevoPlatillo = {
-      nombre: '',
-      categoria: 'Hamburguesas & Snacking',
-      precio: 0
-    };
+    this.editandoId = null;
+    this.formulario = this.formularioVacio();
   }
 
-  editarPlatillo(platillo: Platillo) {
-    const nuevoPrecio = Number(window.prompt('Precio del platillo:', String(platillo.precio)));
-
-    if (Number.isFinite(nuevoPrecio) && nuevoPrecio > 0) {
-      platillo.precio = nuevoPrecio;
+  async togglePausar(platillo: PlatilloMenu): Promise<void> {
+    try {
+      await this.api.platilloDisponible(platillo.id, !platillo.disponible);
+      platillo.disponible = !platillo.disponible;
+      this.error = '';
+    } catch (error) {
+      this.error = mensajeError(error);
     }
+    this.cdr.markForCheck();
   }
 
-  togglePausar(platillo: Platillo) {
-    platillo.pausado = !platillo.pausado;
-  }
-
-  volverDashboard() {
+  volverDashboard(): void {
     this.router.navigate(['/gerente']);
+  }
+
+  private formularioVacio(): { nombre: string; seccion: string; precio: number; receta: LineaFormulario[] } {
+    return { nombre: '', seccion: this.secciones[0], precio: 0, receta: [] };
   }
 }

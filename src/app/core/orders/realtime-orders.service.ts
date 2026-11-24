@@ -29,8 +29,14 @@ export class RealtimeOrdersService {
   marcarMesa(
     accion: 'entrega' | 'cuenta' | 'cobro' | TableStatus,
     mesaId: number,
+    descuento?: number,
   ): void {
-    this.enviar({ type: 'update-table', accion, mesaId: String(mesaId) });
+    this.enviar({
+      type: 'update-table',
+      accion,
+      mesaId: String(mesaId),
+      ...(descuento ? { descuento: String(descuento) } : {}),
+    });
   }
 
   iniciarLimpieza(mesaId: number): void {
