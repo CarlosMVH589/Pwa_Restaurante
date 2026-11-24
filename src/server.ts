@@ -6,47 +6,89 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { createServer } from 'node:http';
-import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { WebSocket, WebSocketServer } from 'ws';
-import type { OrderStatus, RestaurantData } from './app/core/orders/order.model';
+import type { OrderStatus } from './app/core/orders/order.model';
 import type { UserRole } from './app/core/auth/auth.service';
+import * as db from './db';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
-const restaurantDataPath = [
-  join(import.meta.dirname, '../browser/data/restaurante-mx.json'),
-  join(process.cwd(), 'public/data/restaurante-mx.json'),
-].find(existsSync);
-if (!restaurantDataPath) {
-  throw new Error('No se encontró public/data/restaurante-mx.json para cargar los datos de demostración.');
-}
-const restaurantData = JSON.parse(readFileSync(restaurantDataPath, 'utf8')) as RestaurantData;
-restaurantData.cuentasPendientes ??= [];
 const webSocketServer = new WebSocketServer({ noServer: true });
 const socketRoles = new WeakMap<WebSocket, UserRole>();
 const validRoles = new Set<UserRole>(['cajero', 'cocina', 'gerente', 'host', 'mesero']);
 const validOrderStatuses = new Set<OrderStatus>(['pendiente', 'preparacion', 'listo', 'entregado']);
 
-for (const mesa of restaurantData.mesas) {
-  if (mesa.estado !== 'limpieza') {
-    actualizarMesa(mesa.id);
-  }
+app.use(express.json());
+
+function rolDe(req: express.Request): UserRole | null {
+  const role = (req.headers.authorization ?? '').replace(/^Bearer demo:/, '') as UserRole;
+  return validRoles.has(role) ? role : null;
 }
 
-/**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
- */
+function permitir(...roles: UserRole[]): express.RequestHandler {
+  return (req, res, next) => {
+    const role = rolDe(req);
+    if (!role) return void res.status(401).json({ error: 'no autenticado' });
+    if (!roles.includes(role)) return void res.status(403).json({ error: 'sin permiso' });
+    next();
+  };
+}
+
+const manejar = (fn: express.RequestHandler): express.RequestHandler => (req, res, next) =>
+  void Promise.resolve(fn(req, res, next)).catch((error: Error) => res.status(400).json({ error: error.message }));
+
+app.get('/api/reportes/ventas', permitir('gerente'), manejar(async (req, res) => {
+  res.json(await db.reporteVentas(String(req.query['fecha'] ?? 'hoy'), String(req.query['turno'] ?? 'completo')));
+}));
+
+function platilloValido(body: unknown): db.PlatilloEntrada {
+  const { nombre, precio, seccion, receta } = (body ?? {}) as Record<string, unknown>;
+  if (typeof nombre !== 'string' || !nombre.trim() || nombre.trim().length > 60) throw new Error('nombre inválido');
+  if (typeof precio !== 'number' || !Number.isFinite(precio) || precio <= 0 || precio > 99999) throw new Error('precio inválido');
+  if (typeof seccion !== 'string') throw new Error('categoría inválida');
+  if (receta === undefined) return { nombre, precio, seccion };
+  if (!Array.isArray(receta) || receta.length > 20) throw new Error('receta inválida');
+  const lineas = receta.map((linea) => {
+    const { ingredienteId, cantidad } = (linea ?? {}) as Record<string, unknown>;
+    if (!Number.isInteger(ingredienteId) || typeof cantidad !== 'number' || !(cantidad > 0) || cantidad > 10000) {
+      throw new Error('receta inválida');
+    }
+    return { ingredienteId: ingredienteId as number, cantidad };
+  });
+  return { nombre, precio, seccion, receta: lineas };
+}
+
+app.get('/api/menu', permitir('gerente'), manejar(async (_req, res) => {
+  res.json(await db.menuAdmin());
+}));
+
+app.get('/api/ingredientes', permitir('gerente'), manejar(async (_req, res) => {
+  res.json(await db.listarIngredientes());
+}));
+
+app.post('/api/menu', permitir('gerente'), manejar(async (req, res) => {
+  res.status(201).json({ id: await db.guardarPlatillo(null, platilloValido(req.body)) });
+}));
+
+app.put('/api/menu/:id', permitir('gerente'), manejar(async (req, res) => {
+  const id = Number(req.params['id']);
+  if (!Number.isInteger(id)) throw new Error('platillo inválido');
+  res.json({ id: await db.guardarPlatillo(id, platilloValido(req.body)) });
+}));
+
+app.patch('/api/menu/:id/disponible', permitir('gerente'), manejar(async (req, res) => {
+  const id = Number(req.params['id']);
+  const disponible = (req.body as { disponible?: unknown }).disponible;
+  if (!Number.isInteger(id) || typeof disponible !== 'boolean') throw new Error('datos inválidos');
+  await db.platilloDisponible(id, disponible);
+  res.status(204).end();
+}));
+app.get('/api/inventario/bajo', permitir('cocina', 'gerente'), manejar(async (_req, res) => {
+  res.json(await db.stockBajo());
+}));
 
 /**
  * Serve static files from /browser
@@ -79,11 +121,17 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
   const port = process.env['PORT'] || 4000;
   const server = createServer(app);
   webSocketServer.on('connection', (webSocket) => {
-    webSocket.send(JSON.stringify({ type: 'snapshot', data: restaurantData }));
+    void db.cargarSnapshot().then((data) => webSocket.send(JSON.stringify({ type: 'snapshot', data })));
     webSocket.on('message', (rawMessage) => {
       const role = socketRoles.get(webSocket);
-      if (role) procesarMensaje(role, rawMessage.toString());
+      if (role) void procesarMensaje(webSocket, role, rawMessage.toString());
     });
+  });
+
+  let pendiente: ReturnType<typeof setTimeout> | undefined;
+  void db.escucharCambios(() => {
+    clearTimeout(pendiente);
+    pendiente = setTimeout(() => void publicarSnapshot().catch((error) => console.error(error)), 50);
   });
 
   server.on('upgrade', (request, socket, head) => {
@@ -107,31 +155,8 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
   });
 }
 
-function actualizarMesa(mesaId: number): void {
-  const table = restaurantData.mesas.find((mesa) => mesa.id === mesaId);
-  const orders = restaurantData.ordenes.filter((order) => order.mesaId === mesaId);
-  if (!table) return;
-  if (orders.length === 0) {
-    if (table.estado !== 'limpieza') {
-      table.estado = 'disponible';
-      table.progreso = 0;
-      delete table.nota;
-    }
-    return;
-  }
-
-  const progress = orders.reduce(
-    (total, order) => total + { pendiente: 0, preparacion: 50, listo: 75, entregado: 100 }[order.estado],
-    0,
-  );
-  table.progreso = Math.round(progress / orders.length);
-  if (orders.every((order) => order.estado === 'entregado')) table.estado = 'entregada';
-  else if (orders.some((order) => order.estado === 'listo')) table.estado = 'lista';
-  else if (table.estado !== 'cuenta') table.estado = 'preparando';
-}
-
-function publicarSnapshot(): void {
-  const message = JSON.stringify({ type: 'snapshot', data: restaurantData });
+async function publicarSnapshot(): Promise<void> {
+  const message = JSON.stringify({ type: 'snapshot', data: await db.cargarSnapshot() });
   for (const client of webSocketServer.clients) {
     if (client.readyState === WebSocket.OPEN) client.send(message);
   }
@@ -147,10 +172,13 @@ interface ClientMessage {
   mesa?: string;
   cantidad?: string;
   detalle?: string;
+  descuento?: string;
   accion?: 'entrega' | 'cuenta' | 'cobro' | 'disponible' | 'limpieza' | 'preparando' | 'demora' | 'entregada';
 }
 
-function procesarMensaje(role: UserRole, rawMessage: string): void {
+const estadosHost = new Set(['disponible', 'limpieza', 'preparando', 'demora', 'entregada']);
+
+async function procesarMensaje(webSocket: WebSocket, role: UserRole, rawMessage: string): Promise<void> {
   let message: ClientMessage;
   try {
     message = JSON.parse(rawMessage) as ClientMessage;
@@ -158,168 +186,45 @@ function procesarMensaje(role: UserRole, rawMessage: string): void {
     return;
   }
 
-  if (message.type === 'update-status') {
-    actualizarEstadoOrden(role, message);
-  } else if (message.type === 'update-menu') {
-    actualizarDisponibilidad(role, message);
-  } else if (message.type === 'add-order') {
-    agregarOrden(role, message);
-  } else if (message.type === 'update-table') {
-    actualizarMesaPorAccion(role, message);
-  } else if (message.type === 'complete-delivery') {
-    confirmarEntregaCompleta(role, message);
-  } else if (message.type === 'start-cleaning') {
-    iniciarLimpieza(role, message);
-  } else if (message.type === 'finish-cleaning') {
-    finalizarLimpieza(role, message);
+  try {
+    await ejecutar(role, message);
+  } catch (error) {
+    const texto = error instanceof Error ? error.message : 'error desconocido';
+    console.error(`[${role}] ${message.type}: ${texto}`);
+    if (webSocket.readyState === WebSocket.OPEN) webSocket.send(JSON.stringify({ type: 'error', message: texto }));
   }
 }
 
-function agregarOrden(role: UserRole, message: ClientMessage): void {
-  if (role !== 'mesero' || !message.nombre || !message.mesaId || !message.mesa || !message.cantidad) return;
-
-  const menuItem = restaurantData.menuItems.find((item) => item.nombre === message.nombre);
+async function ejecutar(role: UserRole, message: ClientMessage): Promise<void> {
   const mesaId = Number(message.mesaId);
-  const cantidad = Number(message.cantidad);
-  if (
-    !menuItem ||
-    !menuItem.disponible ||
-    !Number.isInteger(mesaId) ||
-    !Number.isInteger(cantidad) ||
-    cantidad < 1 ||
-    cantidad > 20 ||
-    !restaurantData.mesas.some((mesa) => mesa.id === mesaId)
-  ) return;
+  const mesaValida = Number.isInteger(mesaId);
 
-  const mesa = restaurantData.mesas.find((item) => item.id === mesaId);
-  if (!mesa) return;
-  if (mesa.estado === 'limpieza') return;
-  if (mesa.estado === 'cuenta') {
-    mesa.estado = 'preparando';
-    delete mesa.nota;
+  if (message.type === 'update-status') {
+    if (!message.orderId || !message.estado || !validOrderStatuses.has(message.estado)) return;
+    const actual = await db.estadoItem(message.orderId);
+    if (!actual || !transicionPermitida(role, actual, message.estado)) return;
+    await db.actualizarEstadoItem(message.orderId, message.estado);
+  } else if (message.type === 'update-menu') {
+    if (role !== 'cocina' || !message.nombre || typeof message.disponible !== 'boolean') return;
+    await db.actualizarDisponibilidad(message.nombre, message.disponible);
+  } else if (message.type === 'add-order') {
+    if (role !== 'mesero' || !message.nombre || !mesaValida) return;
+    await db.agregarOrden(mesaId, message.nombre, Number(message.cantidad), (message.detalle ?? '').toString());
+  } else if (message.type === 'update-table') {
+    if (!message.accion || !mesaValida) return;
+    if (message.accion === 'cuenta' && role === 'mesero') await db.solicitarCuenta(mesaId);
+    else if (message.accion === 'entrega' && role === 'mesero') await db.confirmarEntrega(mesaId);
+    else if (message.accion === 'cobro' && role === 'cajero') {
+      const descuento = Number(message.descuento ?? 0);
+      await db.cobrarMesa(mesaId, 'efectivo', Number.isFinite(descuento) ? descuento : 0);
+    } else if (role === 'host' && estadosHost.has(message.accion)) await db.hostCambiarEstado(mesaId, message.accion);
+  } else if (message.type === 'complete-delivery') {
+    if (role === 'mesero' && mesaValida) await db.confirmarEntregaCompleta(mesaId);
+  } else if (message.type === 'start-cleaning') {
+    if ((role === 'mesero' || role === 'host') && mesaValida) await db.iniciarLimpieza(mesaId);
+  } else if (message.type === 'finish-cleaning') {
+    if (role === 'mesero' && mesaValida) await db.finalizarLimpieza(mesaId);
   }
-  const detalle = (message.detalle ?? '').trim().slice(0, 180);
-  const nextId = Math.max(0, ...restaurantData.ordenes.map((order) => Number(order.id) || 0)) + 1;
-  const nextComanda = restaurantData.ordenes
-    .filter((order) => order.mesaId === mesaId)
-    .map((order) => Number(order.comanda.replace('#', '')))
-    .filter(Number.isFinite)
-    .reduce((max, value) => Math.max(max, value), 0);
-
-  restaurantData.ordenes.push({
-    id: String(nextId),
-    comanda: nextComanda ? `#${nextComanda}` : `#${100 + nextId}`,
-    mesaId,
-    mesa: mesa.nombre,
-    platillo: menuItem.nombre,
-    detalle: detalle || 'Sin especificaciones',
-    cantidad,
-    precio: menuItem.precio * cantidad,
-    estado: 'pendiente',
-    horaSolicitud: new Intl.DateTimeFormat('es-MX', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: restaurantData.restaurante.zonaHoraria,
-    }).format(new Date()),
-  });
-  actualizarMesa(mesaId);
-  publicarSnapshot();
-}
-
-function actualizarEstadoOrden(role: UserRole, message: ClientMessage): void {
-  if (!message.orderId || !message.estado || !validOrderStatuses.has(message.estado)) return;
-  const order = restaurantData.ordenes.find((item) => item.id === message.orderId);
-  if (!order || !transicionPermitida(role, order.estado, message.estado)) return;
-
-  order.estado = message.estado;
-  actualizarMesa(order.mesaId);
-  publicarSnapshot();
-}
-
-function actualizarMesaPorAccion(role: UserRole, message: ClientMessage): void {
-  if (!message.accion || !message.mesaId) return;
-  const mesa = restaurantData.mesas.find((item) => item.id === Number(message.mesaId));
-  if (!mesa) return;
-
-  if (mesa.estado === 'limpieza') return;
-  if (message.accion === 'cuenta' && role === 'mesero') {
-    const ordenesMesa = restaurantData.ordenes.filter((order) => order.mesaId === mesa.id);
-    restaurantData.cuentasPendientes = restaurantData.cuentasPendientes
-      .filter((order) => order.mesaId !== mesa.id)
-      .concat(ordenesMesa);
-    restaurantData.ordenes = restaurantData.ordenes.filter((order) => order.mesaId !== mesa.id);
-    mesa.estado = 'cuenta';
-    mesa.nota = 'Cuenta solicitada por el mesero.';
-  } else if (message.accion === 'entrega' && role === 'mesero') {
-    const orders = restaurantData.ordenes.filter((order) => order.mesaId === mesa.id);
-    if (!orders.length || !orders.every((order) => order.estado === 'entregado')) return;
-    mesa.estado = 'entregada';
-    mesa.progreso = 100;
-    mesa.nota = 'Entrega completa confirmada.';
-  } else if (message.accion === 'cobro' && role === 'cajero') {
-    restaurantData.cuentasPendientes = restaurantData.cuentasPendientes
-      .filter((order) => order.mesaId !== mesa.id);
-    mesa.estado = 'limpieza';
-    mesa.progreso = 100;
-    mesa.limpiezaInicio = undefined;
-    mesa.nota = 'Cuenta cobrada. Limpieza pendiente de iniciar.';
-  } else if (role === 'host' && ['disponible', 'limpieza', 'preparando', 'demora', 'entregada'].includes(message.accion)) {
-    const nuevoEstado = message.accion;
-    if (nuevoEstado !== 'disponible' && nuevoEstado !== 'limpieza' && nuevoEstado !== 'preparando' && nuevoEstado !== 'demora' && nuevoEstado !== 'entregada') return;
-    mesa.estado = nuevoEstado;
-    mesa.nota = message.accion === 'limpieza' ? 'Limpieza pendiente de iniciar.' : undefined;
-    if (message.accion === 'limpieza') mesa.limpiezaInicio = undefined;
-    if (message.accion !== 'limpieza') mesa.limpiezaInicio = undefined;
-  } else {
-    return;
-  }
-  publicarSnapshot();
-}
-
-function iniciarLimpieza(role: UserRole, message: ClientMessage): void {
-  if ((role !== 'mesero' && role !== 'host') || !message.mesaId) return;
-  const mesa = restaurantData.mesas.find((item) => item.id === Number(message.mesaId));
-  if (!mesa || mesa.estado !== 'limpieza') return;
-  if (mesa.limpiezaInicio) return;
-  mesa.limpiezaInicio = new Date().toISOString();
-  mesa.nota = 'Limpieza en curso.';
-  publicarSnapshot();
-}
-
-function finalizarLimpieza(role: UserRole, message: ClientMessage): void {
-  if (role !== 'mesero' || !message.mesaId) return;
-  const mesa = restaurantData.mesas.find((item) => item.id === Number(message.mesaId));
-  if (!mesa || mesa.estado !== 'limpieza' || !mesa.limpiezaInicio) return;
-  mesa.estado = 'disponible';
-  mesa.progreso = 0;
-  mesa.limpiezaInicio = undefined;
-  mesa.nota = 'Limpieza finalizada.';
-  publicarSnapshot();
-}
-
-function confirmarEntregaCompleta(role: UserRole, message: ClientMessage): void {
-  if (role !== 'mesero' || !message.mesaId) return;
-  const mesa = restaurantData.mesas.find((item) => item.id === Number(message.mesaId));
-  if (!mesa) return;
-
-  const ordenesListas = restaurantData.ordenes.filter(
-    (order) => order.mesaId === mesa.id && order.estado === 'listo',
-  );
-  if (!ordenesListas.length) return;
-
-  ordenesListas.forEach((order) => {
-    order.estado = 'entregado';
-  });
-  actualizarMesa(mesa.id);
-  if (restaurantData.ordenes
-    .filter((order) => order.mesaId === mesa.id)
-    .every((order) => order.estado === 'entregado')) {
-    mesa.estado = 'entregada';
-    mesa.progreso = 100;
-    mesa.nota = 'Entrega completa confirmada.';
-  }
-  publicarSnapshot();
 }
 
 function transicionPermitida(role: UserRole, current: OrderStatus, next: OrderStatus): boolean {
@@ -333,14 +238,6 @@ function transicionPermitida(role: UserRole, current: OrderStatus, next: OrderSt
     return transitions[current].includes(next);
   }
   return role === 'mesero' && current === 'listo' && next === 'entregado';
-}
-
-function actualizarDisponibilidad(role: UserRole, message: ClientMessage): void {
-  if (role !== 'cocina' || !message.nombre || typeof message.disponible !== 'boolean') return;
-  const menuItem = restaurantData.menuItems.find((item) => item.nombre === message.nombre);
-  if (!menuItem) return;
-  menuItem.disponible = message.disponible;
-  publicarSnapshot();
 }
 
 /**

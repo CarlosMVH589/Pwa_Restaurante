@@ -40,7 +40,6 @@
         }
       </ul>
     </aside>
-//comentaatio
     <!-- Content Workspace -->
     <main class="content-area">
       <div class="card">
@@ -70,19 +69,28 @@
           </button>
         </div>
 
+        @if (aviso) {
+          <p class="aviso-ok" role="status">{{ aviso }}</p>
+        }
+        @if (error && !mostrarFormulario) {
+          <p class="form-error" role="alert">{{ error }}</p>
+        }
+
         @if (mostrarFormulario) {
-          <form class="add-form" (ngSubmit)="agregarPlatillo()">
+          <form class="add-form" (ngSubmit)="guardarPlatillo()">
+            <h3 class="form-title">{{ editandoId === null ? 'Nuevo platillo' : 'Editar platillo' }}</h3>
             <label class="sr-only" for="nuevo-nombre">Nombre del platillo</label>
             <input
               id="nuevo-nombre"
               type="text"
               name="nombre"
+              maxlength="60"
               placeholder="Nombre del platillo"
-              [(ngModel)]="nuevoPlatillo.nombre"
+              [(ngModel)]="formulario.nombre"
               required
             />
             <label class="sr-only" for="nueva-categoria">Categoría</label>
-            <select id="nueva-categoria" name="categoria" [(ngModel)]="nuevoPlatillo.categoria">
+            <select id="nueva-categoria" name="seccion" [(ngModel)]="formulario.seccion">
               @for (cat of categorias; track cat.nombre) {
                 <option [value]="cat.nombre">{{ cat.nombre }}</option>
               }
@@ -95,11 +103,36 @@
               placeholder="Precio"
               min="1"
               step="0.01"
-              [(ngModel)]="nuevoPlatillo.precio"
+              [(ngModel)]="formulario.precio"
               required
             />
-            <button class="btn-save" type="submit">GUARDAR</button>
-            <button class="btn-cancel" type="button" (click)="cancelarAgregar()">CANCELAR</button>
+
+            <div class="receta-box">
+              <p class="receta-title">Ingredientes que consume (opcional)</p>
+              <p class="receta-hint">Con esto el inventario se descuenta solo cada vez que se pida el platillo.</p>
+              @for (linea of formulario.receta; track $index) {
+                <div class="receta-row">
+                  <select [name]="'ingrediente' + $index" [(ngModel)]="linea.ingredienteId" aria-label="Ingrediente">
+                    <option [ngValue]="null">Elige un ingrediente...</option>
+                    @for (ingrediente of ingredientes; track ingrediente.id) {
+                      <option [ngValue]="ingrediente.id">{{ ingrediente.nombre }} (hay {{ ingrediente.stock }} {{ ingrediente.unidad }})</option>
+                    }
+                  </select>
+                  <input type="number" min="0.01" step="0.01" [name]="'cantidad' + $index" [(ngModel)]="linea.cantidad" aria-label="Cantidad por platillo" />
+                  <span class="receta-unit">{{ unidadDe(linea.ingredienteId) }} por platillo</span>
+                  <button class="btn-cancel" type="button" (click)="quitarLineaReceta($index)" aria-label="Quitar ingrediente">×</button>
+                </div>
+              }
+              <button class="btn-add-line" type="button" (click)="agregarLineaReceta()">+ AGREGAR INGREDIENTE</button>
+            </div>
+
+            @if (error) {
+              <p class="form-error" role="alert">{{ error }}</p>
+            }
+            <div class="form-actions">
+              <button class="btn-save" type="submit" [disabled]="guardando">{{ guardando ? 'GUARDANDO...' : 'GUARDAR' }}</button>
+              <button class="btn-cancel" type="button" (click)="cancelarAgregar()">CANCELAR</button>
+            </div>
           </form>
         }
 
@@ -118,16 +151,16 @@
             <tbody>
               @for (platillo of filteredPlatillos; track platillo.id) {
                 <tr>
-                  <td class="font-medium">{{ platillo.nombre }}</td>
-                  <td>{{ platillo.categoria }}</td>
+                  <td class="font-medium">{{ platillo.nombre }}<small class="receta-resumen">{{ resumenReceta(platillo) }}</small></td>
+                  <td>{{ platillo.seccion }}</td>
                   <td>${{ platillo.precio | number:'1.2-2' }} MXN</td>
                   <td>
                     <span 
                       class="status-badge" 
-                      [class.disponible]="platillo.estado === 'Disponible'"
-                      [class.agotado]="platillo.estado === 'Agotado'"
+                      [class.disponible]="platillo.disponible"
+                      [class.agotado]="!platillo.disponible"
                     >
-                      {{ platillo.estado }}
+                      {{ platillo.disponible ? 'Disponible' : 'No disponible' }}
                     </span>
                   </td>
                   <td>
@@ -135,10 +168,10 @@
                       <button class="btn-action edit" (click)="editarPlatillo(platillo)">Editar</button>
                       <button 
                         class="btn-action pause" 
-                        [class.paused]="platillo.pausado"
+                        [class.paused]="!platillo.disponible"
                         (click)="togglePausar(platillo)"
                       >
-                        {{ platillo.pausado ? 'Reanudar' : 'Pausar' }}
+                        {{ platillo.disponible ? 'Pausar' : 'Reanudar' }}
                       </button>
                     </div>
                   </td>

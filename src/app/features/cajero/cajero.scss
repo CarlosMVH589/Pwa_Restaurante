@@ -274,3 +274,13 @@ body {
     }
   }
 }
+.btn-desglose { margin-top: .45rem; padding: .3rem .6rem; border: 1px solid #2563eb; border-radius: 3px; color: #2563eb; background: #fff; font-size: .68rem; font-weight: 700; letter-spacing: .03em; cursor: pointer; }
+.btn-desglose:hover { color: #fff; background: #2563eb; }
+.desglose { margin: -.5rem 0 1rem; padding: .9rem 1rem; border: 1px solid #d1d5db; border-top: 0; background: #f8fafc; font-size: .8rem; color: #334155; }
+.desglose-head, .desglose-row { display: grid; grid-template-columns: 1fr 90px 90px; gap: .5rem; padding: .4rem 0; }
+.desglose-head { border-bottom: 1px solid #cbd5e1; color: #64748b; font-size: .68rem; font-weight: 700; text-transform: uppercase; }
+.desglose-row { border-bottom: 1px solid #e2e8f0; }
+.desglose-row small { display: block; margin-top: .15rem; color: #94a3b8; }
+.desglose-head span:not(:first-child), .desglose-row span:not(:first-child), .desglose-row strong { text-align: right; }
+.desglose-sum { display: flex; justify-content: space-between; padding: .35rem 0 0; }
+.desglose-sum.total { margin-top: .4rem; padding-top: .6rem; border-top: 2px solid #334155; font-size: .95rem; color: #111827; }

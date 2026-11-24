@@ -391,3 +391,18 @@
     color: #334155;
   }
 }
+.add-form { flex-wrap: wrap; align-items: center; }
+.form-title { flex-basis: 100%; margin: 0; font-size: 0.95rem; color: #0f172a; }
+.receta-box { flex-basis: 100%; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1; }
+.receta-title { margin: 0; font-size: 0.8rem; font-weight: 700; color: #334155; }
+.receta-hint { margin: 0.15rem 0 0.6rem; font-size: 0.72rem; color: #64748b; }
+.receta-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+.receta-row select { flex: 2; }
+.receta-row input { flex: 0 0 90px; }
+.receta-unit { flex: 1; font-size: 0.72rem; color: #64748b; }
+.btn-add-line { padding: 0.45rem 0.8rem; border: 1px dashed #2563eb; border-radius: 4px; color: #2563eb; background: #fff; font-size: 0.72rem; font-weight: 700; cursor: pointer; }
+.form-actions { display: flex; flex-basis: 100%; gap: 0.75rem; }
+.form-error { flex-basis: 100%; margin: 0 0 0.75rem; padding: 0.6rem 0.8rem; border-radius: 4px; color: #991b1b; background: #fee2e2; font-size: 0.8rem; }
+.aviso-ok { margin: 0 0 0.75rem; padding: 0.6rem 0.8rem; border-radius: 4px; color: #166534; background: #dcfce7; font-size: 0.8rem; }
+.receta-resumen { display: block; margin-top: 0.2rem; color: #94a3b8; font-size: 0.7rem; font-weight: 400; }
+.btn-save:disabled { opacity: 0.6; cursor: wait; }

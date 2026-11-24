@@ -18,15 +18,15 @@
       <div class="toolbar">
         <div class="filter-group">
           <label for="fecha-reporte">Fecha:</label>
-          <select id="fecha-reporte" [(ngModel)]="fechaSeleccionada">
-            <option value="hoy">Hoy (21 Sep 2026)</option>
+          <select id="fecha-reporte" [(ngModel)]="fechaSeleccionada" (change)="cargar()">
+            <option value="hoy">Hoy</option>
             <option value="ayer">Ayer</option>
             <option value="semana">Esta Semana</option>
             <option value="mes">Este Mes</option>
           </select>
 
           <label for="turno-reporte">Turno:</label>
-          <select id="turno-reporte" [(ngModel)]="turnoSeleccionado">
+          <select id="turno-reporte" [(ngModel)]="turnoSeleccionado" (change)="cargar()">
             <option value="completo">Turno Completo</option>
             <option value="matutino">Matutino</option>
             <option value="vespertino">Vespertino</option>
