@@ -26,12 +26,12 @@ insert into menu_items (nombre, precio, categoria, disponible, seccion) values
 ('Agua de jamaica',38,'bebida',true,'Bebidas');
 insert into ingredientes (nombre, unidad, stock, stock_minimo) values
 ('Pan de hamburguesa','pza',50,10),('Carne de res','pza',50,10),('Queso','reb',100,20),
-('Barbacoa','porc',60,10),('Tortilla','pza',200,40),('Papa','porc',40,8),('Jamaica','vaso',60,10);
+('Barbacoa','porc',60,10),('Tortilla','pza',200,40),('Papa','pza',200,40),('Jamaica','vaso',60,10);
 insert into recetas (menu_item_id, ingrediente_id, cantidad)
 select m.id, i.id, r.c from (values
 ('Hamburguesa BBQ','Pan de hamburguesa',1),('Hamburguesa BBQ','Carne de res',1),('Hamburguesa BBQ','Queso',1),
 ('Taco de barbacoa','Barbacoa',1),('Taco de barbacoa','Tortilla',1),
-('Papas a la francesa','Papa',1),('Agua de jamaica','Jamaica',1)
+('Papas a la francesa','Papa',5),('Agua de jamaica','Jamaica',1)
 ) r(p,g,c) join menu_items m on m.nombre=r.p join ingredientes i on i.nombre=r.g;
 insert into comandas (folio, mesa_id, mesero) values (104,7,'mesero');
 insert into cobros (comanda_id) select id from comandas where folio=104;

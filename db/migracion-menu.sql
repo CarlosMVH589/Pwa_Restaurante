@@ -5,7 +5,8 @@ update menu_items set seccion = case
   when nombre in ('Sopa azteca','Ensalada de nopales') then 'Sopas & Entradas'
   when nombre in ('Hamburguesa BBQ','Papas a la francesa') then 'Hamburguesas & Snacking'
   when nombre = 'Flan de la casa' then 'Postres'
-  else 'Platillos Fuertes' end;
+  else 'Platillos Fuertes' end
+ where seccion = 'Platillos Fuertes';
 
 alter table menu_items drop constraint if exists menu_items_seccion_check;
 alter table menu_items add constraint menu_items_seccion_check
